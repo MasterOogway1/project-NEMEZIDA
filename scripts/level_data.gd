@@ -59,7 +59,7 @@ static func level_one(root: Node3D, game: Node) -> Dictionary:
 	F.interactable(root, Vector3(-8, 1.25, 9), "invite", "ACT_INVITE", 0, Color("276879"), Vector3(0.75, 0.55, 0.15))
 	F.interactable(root, Vector3(10, 1.0, -9), "city_node", "ACT_CITY_NODE")
 	F.interactable(root, Vector3(0, 1.0, 14.65), "exit", "ACT_EXIT", 0, Color("3d9d79"), Vector3(1.8, 2.1, 0.18))
-	F.sign_text(root, Vector3(0, 2.5, 14.48), "ВЫХОД / EXIT")
+	F.sign_text(root, Vector3(0, 2.5, 14.48), "ВЫХОД / EXIT", Color("bcecef"), PI)
 	F.sign_text(root, Vector3(-10, 2.3, 3.85), "АРХИТЕКТУРНОЕ БЮРО")
 	F.plant(root, Vector3(-13, 0, 12))
 	F.plant(root, Vector3(12, 0, 7))
@@ -69,14 +69,14 @@ static func level_one(root: Node3D, game: Node) -> Dictionary:
 	F.architectural_model(root, Vector3(-10, 0, 6.5))
 	F.bench(root, Vector3(8, 0, 12), Color("657a71"), PI)
 	F.desk(root, Vector3(9, 0, 7), Color("81715a"))
-	F.monitor(root, Vector3(9, 0.82, 7), PI, Color("e5bd72"))
+	F.laptop(root, Vector3(9, 0.82, 7), PI)
 	F.box(root, Vector3(-13.7, 1.0, 0), Vector3(1.6, 2.0, 0.55), Color("554d43"))
 	for y in [0.35, 0.85, 1.35, 1.85]:
 		F.box(root, Vector3(-13.7, y, -0.3), Vector3(1.5, 0.07, 0.65), Color("aa9167"), false)
 	for x in [-12.9, -12.65, -12.4]:
 		F.cylinder(root, Vector3(x, 0.65, 7), 0.075, 1.3, Color("d8cfb4"))
 	F.light(root, Vector3(-10, 2.35, 8), Color("ffc979"), 1.15, 6.0)
-	F.sign_text(root, Vector3(9, 2.25, 14.48), "ПРИЁМНАЯ / RECEPTION", Color("f1d59b"))
+	F.sign_text(root, Vector3(9, 2.25, 14.48), "ПРИЁМНАЯ / RECEPTION", Color("f1d59b"), PI)
 	for z in [-7.0, -11.0]:
 		F.box(root, Vector3(11.8, 0.8, z), Vector3(1.2, 1.6, 1.2), Color("475d66"))
 	F.security_camera(root, Vector3(4.5, 2.65, 3.6), 0, game)
@@ -119,7 +119,7 @@ static func level_two(root: Node3D, game: Node) -> Dictionary:
 		F.box(root, Vector3(x, 2.35, -12.8), Vector3(0.75, 0.12, 0.75), Color("64d9d5"), false, 0.75)
 		F.light(root, Vector3(x, 2.4, -11.5), Color("58c7cf"), 0.65, 4.0)
 	F.sign_text(root, Vector3(9, 2.4, -14.45), "ИСПЫТАТЕЛЬНАЯ ЗОНА", Color("8ee8e2"))
-	F.guard(root, Vector3(5, 0.1, 1), [Vector3(5,0.1,1), Vector3(12,0.1,1), Vector3(12,0.1,-2), Vector3(5,0.1,-2)], game)
+	F.guard(root, Vector3(5, 0.1, 1), [Vector3(5,0.1,1), Vector3(12,0.1,1), Vector3(12,0.1,-2), Vector3(5,0.1,-2)], game, "business_man")
 	F.guard(root, Vector3(-4, 0.1, -8), [Vector3(-4,0.1,-8), Vector3(5,0.1,-8), Vector3(5,0.1,-12), Vector3(-4,0.1,-12)], game)
 	F.security_camera(root, Vector3(-2, 2.65, 4.6), 0, game)
 	F.security_camera(root, Vector3(13.8, 2.65, -4.5), PI * 0.5, game)
@@ -165,7 +165,7 @@ static func level_three(root: Node3D, game: Node) -> Dictionary:
 	for pos in [Vector3(-13, 2.4, -8), Vector3(13, 2.4, -8), Vector3(0, 2.4, -12)]:
 		F.light(root, pos, Color("5fb9ff"), 0.8, 6.0)
 	F.sign_text(root, Vector3(0, 2.5, -14.45), "СЕРВЕРНЫЙ РЯД / 03", Color("8fd8ff"))
-	F.guard(root, Vector3(-11, 0.1, 1), [Vector3(-11,0.1,1), Vector3(11,0.1,1)], game)
+	F.guard(root, Vector3(-11, 0.1, 1), [Vector3(-11,0.1,1), Vector3(11,0.1,1)], game, "worker")
 	F.guard(root, Vector3(-12, 0.1, -4), [Vector3(-12,0.1,-4), Vector3(12,0.1,-4)], game)
 	F.guard(root, Vector3(-12, 0.1, -13), [Vector3(-12,0.1,-13), Vector3(12,0.1,-13)], game)
 	F.security_camera(root, Vector3(-5, 2.65, 3.6), 0, game)

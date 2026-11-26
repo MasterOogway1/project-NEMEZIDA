@@ -9,13 +9,12 @@ var state: State = State.PATROL
 var last_known := Vector3.ZERO
 var state_time: float = 0.0
 var memory: float = 0.0
-var body_material: StandardMaterial3D
+var variant: String = "swat"
 var visual: Node3D
-var left_arm: MeshInstance3D
-var right_arm: MeshInstance3D
-var left_leg: MeshInstance3D
-var right_leg: MeshInstance3D
-var walk_cycle: float = 0.0
+var character: Node3D
+var animation_player: AnimationPlayer
+var alert_light: OmniLight3D
+var current_animation: String = ""
 var patrol_wait: float = 0.0
 var patrol_yaw: float = 0.0
 var scan_phase: float = 0.0
@@ -34,41 +33,27 @@ func _ready() -> void:
 	collider.position.y = 0.85
 	add_child(collider)
 	visual = Node3D.new()
+	visual.scale = Vector3.ONE * 0.95
 	add_child(visual)
-	body_material = StandardMaterial3D.new()
-	body_material.albedo_color = Color("526b91")
-	var uniform_material := StandardMaterial3D.new()
-	uniform_material.albedo_color = Color("26384d")
-	var body := MeshInstance3D.new()
-	var torso := BoxMesh.new()
-	torso.size = Vector3(0.64, 0.76, 0.36)
-	body.mesh = torso
-	body.position.y = 1.08
-	body.material_override = body_material
-	visual.add_child(body)
-	var head := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.24
-	sphere.height = 0.48
-	head.mesh = sphere
-	head.position.y = 1.62
-	head.material_override = body_material
-	visual.add_child(head)
-	var visor := MeshInstance3D.new()
-	var visor_mesh := BoxMesh.new()
-	visor_mesh.size = Vector3(0.34, 0.1, 0.08)
-	visor.mesh = visor_mesh
-	visor.position = Vector3(0, 1.63, -0.22)
-	var visor_material := StandardMaterial3D.new()
-	visor_material.albedo_color = Color("83e6ef")
-	visor_material.emission_enabled = true
-	visor_material.emission = Color("2c9ca9")
-	visor.material_override = visor_material
-	visual.add_child(visor)
-	left_arm = limb(Vector3(-0.42, 1.06, 0), Vector3(0.16, 0.72, 0.18), body_material)
-	right_arm = limb(Vector3(0.42, 1.06, 0), Vector3(0.16, 0.72, 0.18), body_material)
-	left_leg = limb(Vector3(-0.17, 0.4, 0), Vector3(0.23, 0.72, 0.26), uniform_material)
-	right_leg = limb(Vector3(0.17, 0.4, 0), Vector3(0.23, 0.72, 0.26), uniform_material)
+	if not variant in ["swat", "worker", "business_man"]:
+		variant = "swat"
+	character = load("res://assets/models/characters/%s.glb" % variant).instantiate()
+	character.position = Vector3(0, 0.01, -0.09)
+	character.rotation.y = PI
+	visual.add_child(character)
+	animation_player = find_animation_player(character)
+	if is_instance_valid(animation_player):
+		for action in ["Idle_Neutral", "Walk", "Run", "Interact"]:
+			var animation_name: String = "CharacterArmature|" + action
+			if animation_player.has_animation(animation_name):
+				animation_player.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
+		play_animation("Idle_Neutral")
+	alert_light = OmniLight3D.new()
+	alert_light.position.y = 1.8
+	alert_light.light_color = Color("83e6ef")
+	alert_light.light_energy = 0.18
+	alert_light.omni_range = 2.0
+	add_child(alert_light)
 	scan_phase = global_position.x * 0.37 + global_position.z * 0.21
 	previous_position = global_position
 	if not patrol.is_empty():
@@ -157,13 +142,12 @@ func _physics_process(delta: float) -> void:
 		velocity.z = 0.0
 	move_and_slide()
 	var horizontal_speed := Vector2(velocity.x, velocity.z).length()
-	walk_cycle += delta * horizontal_speed * 5.0
-	var stride := sin(walk_cycle) * minf(horizontal_speed / 1.5, 1.0) * 0.55
-	left_leg.rotation.x = stride
-	right_leg.rotation.x = -stride
-	left_arm.rotation.x = -stride * 0.7
-	right_arm.rotation.x = stride * 0.7
-	visual.position.y = absf(sin(walk_cycle)) * minf(horizontal_speed, 1.0) * 0.035
+	if horizontal_speed > 2.4:
+		play_animation("Run")
+	elif horizontal_speed > 0.1:
+		play_animation("Walk")
+	else:
+		play_animation("Idle_Neutral")
 	if speed > 0.0 and difference.length() > 0.5 and flat_distance(global_position, previous_position) < 0.005:
 		stuck_time += delta
 	else:
@@ -182,17 +166,25 @@ func _physics_process(delta: float) -> void:
 		color = Color("d7a94f")
 	elif state == State.ALERT:
 		color = Color("d95767")
-	body_material.albedo_color = body_material.albedo_color.lerp(color, 8.0 * delta)
+	alert_light.light_color = alert_light.light_color.lerp(color, 8.0 * delta)
+	alert_light.light_energy = 0.65 if state != State.PATROL else 0.18
 
-func limb(pos: Vector3, dimensions: Vector3, mat: Material) -> MeshInstance3D:
-	var part := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = dimensions
-	part.mesh = mesh
-	part.position = pos
-	part.material_override = mat
-	visual.add_child(part)
-	return part
+func find_animation_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+	for child in node.get_children():
+		var result := find_animation_player(child)
+		if is_instance_valid(result):
+			return result
+	return null
+
+func play_animation(action: String) -> void:
+	if not is_instance_valid(animation_player):
+		return
+	var animation_name: String = "CharacterArmature|" + action
+	if current_animation != animation_name and animation_player.has_animation(animation_name):
+		current_animation = animation_name
+		animation_player.play(animation_name, 0.18)
 
 func can_see_player() -> bool:
 	if not is_instance_valid(game.player):

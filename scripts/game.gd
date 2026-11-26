@@ -4,6 +4,8 @@ const PlayerScript = preload("res://scripts/player.gd")
 const Levels = preload("res://scripts/level_data.gd")
 const BlueprintScript = preload("res://scripts/blueprint.gd")
 const WorldMapScript = preload("res://scripts/world_map.gd")
+const BackdropScript = preload("res://scripts/ui_backdrop.gd")
+const ReticleScript = preload("res://scripts/ui_reticle.gd")
 
 var mode: String = "menu"
 var level_root: Node3D
@@ -27,9 +29,14 @@ var hud: Control
 var objective_label: Label
 var access_label: Label
 var prompt_label: Label
+var prompt_panel: PanelContainer
 var subtitle_label: Label
+var subtitle_panel: PanelContainer
 var alarm_bar: ProgressBar
+var alarm_fill: StyleBoxFlat
+var alarm_overlay: ColorRect
 var ai_label: Label
+var reticle: Control
 var blueprint: Control
 var message_time: float = 0.0
 var tour_mode: bool = false
@@ -82,7 +89,7 @@ func _process(delta: float) -> void:
 	if message_time > 0.0:
 		message_time -= delta
 		if message_time <= 0.0 and is_instance_valid(subtitle_label):
-			subtitle_label.hide()
+			subtitle_panel.hide()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEvent and event.is_echo():
@@ -139,20 +146,37 @@ func _clear_screen() -> void:
 		screen.remove_child(child)
 		child.queue_free()
 
+func _ui_style(background: Color, border: Color, width: int = 1) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = background
+	style.border_color = border
+	style.set_border_width_all(width)
+	style.set_corner_radius_all(2)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	return style
+
 func _background(color: Color = Color(0.012, 0.025, 0.045, 0.97)) -> void:
-	var background := ColorRect.new()
-	background.color = color
-	screen.add_child(background)
-	_full_rect(background)
+	var backdrop := BackdropScript.new()
+	backdrop.base_color = color
+	backdrop.accent = Color("e76576") if color.r > 0.08 else Color("a982d0") if color.b > 0.055 else Color("64c6d4")
+	screen.add_child(backdrop)
+	_full_rect(backdrop)
 
 func _screen_box() -> VBoxContainer:
 	var center := CenterContainer.new()
 	screen.add_child(center)
 	_full_rect(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size.x = 630
+	panel.add_theme_stylebox_override("panel", _ui_style(Color(0.018, 0.035, 0.052, 0.94), Color(0.35, 0.72, 0.77, 0.48)))
+	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.custom_minimum_size.x = 560
-	box.add_theme_constant_override("separation", 14)
-	center.add_child(box)
+	box.add_theme_constant_override("separation", 13)
+	panel.add_child(box)
 	return box
 
 func _label(parent: Node, text: String, font_size: int = 22, align: HorizontalAlignment = HORIZONTAL_ALIGNMENT_CENTER) -> Label:
@@ -160,6 +184,10 @@ func _label(parent: Node, text: String, font_size: int = 22, align: HorizontalAl
 	label.text = text
 	label.horizontal_alignment = align
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Color("d9e6e8"))
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.65))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(label)
 	return label
@@ -169,10 +197,45 @@ func _button(parent: Node, text: String, callback: Callable, disabled: bool = fa
 	button.text = text
 	button.custom_minimum_size = Vector2(420, 46)
 	button.disabled = disabled
-	button.add_theme_font_size_override("font_size", 20)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_color_override("font_color", Color("d9e6e8"))
+	button.add_theme_color_override("font_hover_color", Color("ecffff"))
+	button.add_theme_color_override("font_pressed_color", Color("07151c"))
+	button.add_theme_color_override("font_disabled_color", Color("60727a"))
+	button.add_theme_stylebox_override("normal", _ui_style(Color("102b38"), Color("315563")))
+	button.add_theme_stylebox_override("hover", _ui_style(Color("174452"), Color("71ced4")))
+	button.add_theme_stylebox_override("pressed", _ui_style(Color("65bdc5"), Color("a4f0ed")))
+	button.add_theme_stylebox_override("disabled", _ui_style(Color("101d25"), Color("253942")))
+	button.add_theme_stylebox_override("focus", _ui_style(Color(0, 0, 0, 0), Color("d6b76c"), 2))
 	button.pressed.connect(callback)
 	parent.add_child(button)
 	return button
+
+func _style_option(button: OptionButton) -> void:
+	button.custom_minimum_size.y = 42
+	button.add_theme_color_override("font_color", Color("d9e6e8"))
+	button.add_theme_color_override("font_hover_color", Color("ecffff"))
+	button.add_theme_stylebox_override("normal", _ui_style(Color("102b38"), Color("315563")))
+	button.add_theme_stylebox_override("hover", _ui_style(Color("174452"), Color("71ced4")))
+	button.add_theme_stylebox_override("pressed", _ui_style(Color("174452"), Color("71ced4")))
+	button.add_theme_stylebox_override("focus", _ui_style(Color(0, 0, 0, 0), Color("d6b76c"), 2))
+
+func _style_slider(slider: HSlider) -> void:
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color("152c37")
+	track.set_corner_radius_all(2)
+	track.content_margin_top = 3
+	track.content_margin_bottom = 3
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color("59b9c2")
+	fill.set_corner_radius_all(2)
+	fill.content_margin_top = 3
+	fill.content_margin_bottom = 3
+	slider.add_theme_stylebox_override("slider", track)
+	slider.add_theme_stylebox_override("grabber_area", fill)
+	slider.add_theme_stylebox_override("grabber_area_highlight", fill)
 
 func show_main_menu() -> void:
 	get_tree().paused = false
@@ -183,8 +246,10 @@ func show_main_menu() -> void:
 	_clear_screen()
 	_background()
 	var box := _screen_box()
-	_label(box, tr("GAME_TITLE"), 42)
-	_label(box, tr("GAME_SUBTITLE"), 19)
+	var link_label := _label(box, "ARCH-LINK  //  OFFLINE PROTOTYPE", 12, HORIZONTAL_ALIGNMENT_LEFT)
+	link_label.modulate = Color("73cbd1")
+	_label(box, tr("GAME_TITLE"), 38)
+	_label(box, tr("GAME_SUBTITLE"), 17)
 	var spacer := Control.new()
 	spacer.custom_minimum_size.y = 20
 	box.add_child(spacer)
@@ -327,6 +392,7 @@ func show_settings(from: String) -> void:
 	language.add_item("Русский", 0)
 	language.add_item("English", 1)
 	language.selected = 0 if settings["language"] == "ru" else 1
+	_style_option(language)
 	language.item_selected.connect(_set_language)
 	box.add_child(language)
 	_label(box, tr("SETTINGS_VOLUME"), 18, HORIZONTAL_ALIGNMENT_LEFT)
@@ -335,6 +401,7 @@ func show_settings(from: String) -> void:
 	volume.max_value = 100
 	volume.step = 1
 	volume.value = float(settings["volume"]) * 100.0
+	_style_slider(volume)
 	volume.value_changed.connect(func(value: float): settings["volume"] = value / 100.0; _apply_settings())
 	box.add_child(volume)
 	_label(box, tr("SETTINGS_MOUSE"), 18, HORIZONTAL_ALIGNMENT_LEFT)
@@ -343,6 +410,7 @@ func show_settings(from: String) -> void:
 	mouse.max_value = 2.0
 	mouse.step = 0.05
 	mouse.value = float(settings["mouse"])
+	_style_slider(mouse)
 	mouse.value_changed.connect(func(value: float): settings["mouse"] = value; _apply_settings())
 	box.add_child(mouse)
 	_label(box, tr("SETTINGS_QUALITY"), 18, HORIZONTAL_ALIGNMENT_LEFT)
@@ -350,6 +418,7 @@ func show_settings(from: String) -> void:
 	quality.add_item(tr("QUALITY_LOW"), 0)
 	quality.add_item(tr("QUALITY_HIGH"), 1)
 	quality.selected = int(settings["quality"])
+	_style_option(quality)
 	quality.item_selected.connect(func(index: int): settings["quality"] = index; _apply_settings())
 	box.add_child(quality)
 	var fullscreen := CheckButton.new()
@@ -433,56 +502,91 @@ func _build_hud() -> void:
 	for child in hud.get_children():
 		hud.remove_child(child)
 		child.queue_free()
+	alarm_overlay = ColorRect.new()
+	alarm_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	alarm_overlay.color = Color(0.5, 0.02, 0.04, 0)
+	hud.add_child(alarm_overlay)
+	_full_rect(alarm_overlay)
 	var margin := MarginContainer.new()
 	hud.add_child(margin)
 	_full_rect(margin)
-	margin.add_theme_constant_override("margin_left", 22)
-	margin.add_theme_constant_override("margin_right", 22)
-	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 20)
 	var top := HBoxContainer.new()
+	top.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	top.add_theme_constant_override("separation", 16)
 	margin.add_child(top)
+	var objective_panel := PanelContainer.new()
+	objective_panel.custom_minimum_size.x = 620
+	objective_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	objective_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.035, 0.05, 0.82), Color(0.35, 0.72, 0.77, 0.42)))
+	top.add_child(objective_panel)
 	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(left)
-	objective_label = _label(left, "", 19, HORIZONTAL_ALIGNMENT_LEFT)
+	left.add_theme_constant_override("separation", 3)
+	objective_panel.add_child(left)
+	var mission_tag := _label(left, "%02d / 04  //  %s" % [level_index + 1, tr("HUD_OBJECTIVE").to_upper()], 11, HORIZONTAL_ALIGNMENT_LEFT)
+	mission_tag.modulate = Color("73cbd1")
+	objective_label = _label(left, "", 18, HORIZONTAL_ALIGNMENT_LEFT)
 	objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	access_label = _label(left, "", 16, HORIZONTAL_ALIGNMENT_LEFT)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	top.add_child(spacer)
+	access_label = _label(left, "", 12, HORIZONTAL_ALIGNMENT_LEFT)
+	access_label.modulate = Color("91a9b1")
+	var top_spacer := Control.new()
+	top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(top_spacer)
+	var right_panel := PanelContainer.new()
+	right_panel.custom_minimum_size.x = 260
+	right_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	right_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.035, 0.05, 0.82), Color(0.35, 0.72, 0.77, 0.42)))
+	top.add_child(right_panel)
 	var right := VBoxContainer.new()
-	right.custom_minimum_size.x = 220
-	top.add_child(right)
-	var alarm_title := _label(right, tr("HUD_ALARM"), 14, HORIZONTAL_ALIGNMENT_RIGHT)
-	alarm_title.modulate = Color("f39aa4")
+	right.add_theme_constant_override("separation", 4)
+	right_panel.add_child(right)
+	var alarm_title := _label(right, "SECURITY  //  " + tr("HUD_ALARM"), 11, HORIZONTAL_ALIGNMENT_LEFT)
+	alarm_title.modulate = Color("e5a1aa")
 	alarm_bar = ProgressBar.new()
 	alarm_bar.max_value = 100
 	alarm_bar.show_percentage = false
-	alarm_bar.custom_minimum_size = Vector2(220, 12)
+	alarm_bar.custom_minimum_size = Vector2(220, 8)
+	alarm_bar.add_theme_stylebox_override("background", _ui_style(Color("172731"), Color("304751")))
+	alarm_fill = _ui_style(Color("56b9c1"), Color("56b9c1"))
+	alarm_bar.add_theme_stylebox_override("fill", alarm_fill)
 	right.add_child(alarm_bar)
-	ai_label = _label(right, "", 15, HORIZONTAL_ALIGNMENT_RIGHT)
-	var crosshair := _label(hud, "+", 24)
-	crosshair.set_anchors_preset(Control.PRESET_CENTER)
-	crosshair.position = Vector2(-8, -22)
-	prompt_label = _label(hud, "", 20)
-	prompt_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	prompt_label.offset_left = -350
-	prompt_label.offset_right = 350
-	prompt_label.offset_top = -105
-	prompt_label.offset_bottom = -65
-	subtitle_label = _label(hud, "", 19)
-	subtitle_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	subtitle_label.offset_left = -520
-	subtitle_label.offset_right = 520
-	subtitle_label.offset_top = -195
-	subtitle_label.offset_bottom = -115
-	var controls := _label(hud, tr("HUD_CONTROLS"), 13)
+	ai_label = _label(right, "", 12, HORIZONTAL_ALIGNMENT_LEFT)
+	reticle = ReticleScript.new()
+	reticle.set_anchors_preset(Control.PRESET_CENTER)
+	reticle.offset_left = -12
+	reticle.offset_right = 12
+	reticle.offset_top = -12
+	reticle.offset_bottom = 12
+	hud.add_child(reticle)
+	prompt_panel = PanelContainer.new()
+	prompt_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	prompt_panel.offset_left = -340
+	prompt_panel.offset_right = 340
+	prompt_panel.offset_top = -116
+	prompt_panel.offset_bottom = -66
+	prompt_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.04, 0.052, 0.92), Color("65c7ce")))
+	hud.add_child(prompt_panel)
+	prompt_label = _label(prompt_panel, "", 18)
+	prompt_panel.hide()
+	subtitle_panel = PanelContainer.new()
+	subtitle_panel.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	subtitle_panel.offset_left = -500
+	subtitle_panel.offset_right = 500
+	subtitle_panel.offset_top = -198
+	subtitle_panel.offset_bottom = -138
+	subtitle_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.03, 0.042, 0.88), Color(0.4, 0.62, 0.67, 0.45)))
+	hud.add_child(subtitle_panel)
+	subtitle_label = _label(subtitle_panel, "", 17)
+	subtitle_panel.hide()
+	var controls := _label(hud, tr("HUD_CONTROLS"), 12)
 	controls.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	controls.offset_left = -500
 	controls.offset_right = 500
-	controls.offset_top = -34
+	controls.offset_top = -32
 	controls.offset_bottom = -10
-	controls.modulate = Color(0.75, 0.86, 0.9, 0.8)
+	controls.modulate = Color(0.7, 0.82, 0.86, 0.8)
 	blueprint = BlueprintScript.new()
 	blueprint.rooms = current_level_data["rooms"]
 	blueprint.points = current_level_data["points"]
@@ -497,16 +601,23 @@ func _build_hud() -> void:
 func _update_hud() -> void:
 	if not is_instance_valid(objective_label):
 		return
-	objective_label.text = "%s: %s" % [tr("HUD_OBJECTIVE"), _objective_text()]
+	objective_label.text = _objective_text()
 	access_label.text = tr("HUD_ACCESS") % access
 	alarm_bar.value = alarm
+	alarm_fill.bg_color = Color("e76576") if alarm > 55.0 else Color("d6b76c") if alarm > 20.0 else Color("56b9c1")
+	alarm_fill.border_color = alarm_fill.bg_color
+	alarm_overlay.color = Color(0.55, 0.02, 0.04, alarm * 0.0009)
 	blueprint.has_plan = has_plan
-	if is_instance_valid(player.current_target):
+	var target_available := is_instance_valid(player.current_target)
+	prompt_panel.visible = target_available
+	reticle.active = target_available
+	reticle.queue_redraw()
+	if target_available:
 		prompt_label.text = tr("HUD_INTERACT") % player.current_target.caption()
 	else:
 		prompt_label.text = ""
 	var guards := get_tree().get_nodes_in_group("security")
-	ai_label.text = ""
+	ai_label.text = "SCAN  //  CLEAR"
 	for guard in guards:
 		if guard.state != 0:
 			ai_label.text = guard.state_caption()
@@ -713,7 +824,7 @@ func show_ending(choice: String) -> void:
 func show_message(text: String, duration: float = 5.0) -> void:
 	if is_instance_valid(subtitle_label):
 		subtitle_label.text = text
-		subtitle_label.show()
+		subtitle_panel.show()
 		message_time = duration
 
 func _clear_level() -> void:
@@ -766,7 +877,7 @@ func play_sound(sound_name: String, volume: float = -7.0) -> void:
 func _capture_after_delay() -> void:
 	await get_tree().create_timer(1.5).timeout
 	if is_instance_valid(subtitle_label):
-		subtitle_label.hide()
+		subtitle_panel.hide()
 	take_screenshot()
 
 func take_screenshot() -> void:

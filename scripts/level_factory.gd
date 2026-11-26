@@ -56,26 +56,43 @@ static func interactable(parent: Node3D, pos: Vector3, action_id: String, captio
 	item.collision_layer = 1
 	item.collision_mask = 0
 	item.add_to_group("interactable")
-	var mesh_instance := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = dimensions
-	mesh_instance.mesh = mesh
-	mesh_instance.material_override = material(color, 0.35)
-	item.add_child(mesh_instance)
-	item.mesh = mesh_instance
+	var collision_dimensions := dimensions
+	var panel_actions := ["city_node", "test_node", "security", "distract", "overload", "node_a", "node_b", "node_c", "override", "relay_a", "relay_b"]
+	if action_id in panel_actions:
+		imported_model(item, "res://assets/models/props/button.glb", Vector3(0, -0.14, 0), 0.28)
+		cylinder(item, Vector3(0, -0.55, 0), 0.12, 0.9, Color("253944"))
+		var indicator := MeshInstance3D.new()
+		var indicator_mesh := SphereMesh.new()
+		indicator_mesh.radius = 0.065
+		indicator_mesh.height = 0.13
+		indicator.mesh = indicator_mesh
+		indicator.position.y = 0.21
+		indicator.material_override = material(color, 0.8)
+		item.add_child(indicator)
+		item.mesh = indicator
+		collision_dimensions = Vector3(0.8, 0.5, 0.8)
+	else:
+		var mesh_instance := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = dimensions
+		mesh_instance.mesh = mesh
+		mesh_instance.material_override = material(color, 0.35)
+		item.add_child(mesh_instance)
+		item.mesh = mesh_instance
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = dimensions
+	shape.size = collision_dimensions
 	collision.shape = shape
 	item.add_child(collision)
 	parent.add_child(item)
 	return item
 
-static func guard(parent: Node3D, pos: Vector3, route: Array[Vector3], game: Node) -> CharacterBody3D:
+static func guard(parent: Node3D, pos: Vector3, route: Array[Vector3], game: Node, variant: String = "swat") -> CharacterBody3D:
 	var guard := GuardScript.new()
 	guard.position = pos
 	guard.patrol = route
 	guard.game = game
+	guard.variant = variant
 	parent.add_child(guard)
 	return guard
 
@@ -114,6 +131,7 @@ static func desk(parent: Node3D, pos: Vector3, color: Color = Color("6e6258")) -
 	for x in [-0.82, 0.82]:
 		for z in [-0.32, 0.32]:
 			box(parent, pos + Vector3(x, 0.35, z), Vector3(0.1, 0.7, 0.1), color)
+	imported_model(parent, "res://assets/models/props/office_chair.glb", pos + Vector3(0, 0, 1.05), 1.0, PI)
 
 static func server(parent: Node3D, pos: Vector3, color: Color = Color("172c3b")) -> void:
 	box(parent, pos + Vector3(0, 1.1, 0), Vector3(1.0, 2.2, 0.85), color)
@@ -121,13 +139,15 @@ static func server(parent: Node3D, pos: Vector3, color: Color = Color("172c3b"))
 		box(parent, pos + Vector3(0, y, -0.44), Vector3(0.7, 0.045, 0.025), Color("58c7cf"), false, 1.3)
 
 static func plant(parent: Node3D, pos: Vector3) -> void:
-	box(parent, pos + Vector3(0, 0.3, 0), Vector3(0.55, 0.6, 0.55), Color("66534a"))
-	box(parent, pos + Vector3(0, 0.95, 0), Vector3(0.8, 0.85, 0.8), Color("356c59"), false)
+	cylinder(parent, pos + Vector3(0, 0.27, 0), 0.31, 0.54, Color("66534a"))
+	imported_model(parent, "res://assets/models/props/small_plant.glb", pos + Vector3(0, 0.46, 0), 0.28)
 
-static func sign_text(parent: Node3D, pos: Vector3, text: String, color: Color = Color("bcecef")) -> Label3D:
+static func sign_text(parent: Node3D, pos: Vector3, text: String, color: Color = Color("bcecef"), yaw: float = 0.0) -> Label3D:
 	var label := Label3D.new()
 	label.text = text
 	label.position = pos
+	label.rotation.y = yaw
+	label.double_sided = false
 	label.font_size = 48
 	label.pixel_size = 0.007
 	label.modulate = color
@@ -161,12 +181,26 @@ static func monitor(parent: Node3D, pos: Vector3, yaw: float = 0.0, color: Color
 	display.position = pos
 	display.rotation.y = yaw
 	parent.add_child(display)
-	box(display, Vector3(0, 0.34, 0), Vector3(0.95, 0.58, 0.09), Color("17232c"), false)
-	box(display, Vector3(0, 0.34, -0.052), Vector3(0.82, 0.44, 0.018), color, false, 0.75)
-	box(display, Vector3(0, 0.04, 0), Vector3(0.08, 0.2, 0.08), Color("263945"), false)
-	box(display, Vector3(0, -0.05, 0), Vector3(0.42, 0.04, 0.28), Color("263945"), false)
-	for line in [-0.12, 0.0, 0.12]:
-		box(display, Vector3(-0.08, 0.34 + line, -0.065), Vector3(0.48, 0.018, 0.012), Color("d0f4ee"), false, 0.6)
+	imported_model(display, "res://assets/models/props/computer_screen.glb", Vector3(0, 0.08, 0), 0.64)
+	imported_model(display, "res://assets/models/props/keyboard.glb", Vector3(0, 0, -0.34), 0.055)
+	var screen := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.64, 0.35)
+	screen.mesh = quad
+	screen.position = Vector3(0, 0.44, -0.112)
+	var screen_material := material(color.darkened(0.35), 0.75)
+	screen_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	screen.material_override = screen_material
+	display.add_child(screen)
+	for line in [-0.09, 0.0, 0.09]:
+		box(display, Vector3(-0.05, 0.44 + line, -0.116), Vector3(0.4, 0.012, 0.006), Color("d0f4ee"), false, 0.6)
+
+static func laptop(parent: Node3D, pos: Vector3, yaw: float = 0.0) -> void:
+	var display := Node3D.new()
+	display.position = pos
+	display.rotation.y = yaw
+	parent.add_child(display)
+	imported_model(display, "res://assets/models/props/laptop.glb", Vector3.ZERO, 0.43)
 
 static func bench(parent: Node3D, pos: Vector3, color: Color, yaw: float = 0.0) -> void:
 	var seat := Node3D.new()
@@ -196,3 +230,39 @@ static func core_pylon(parent: Node3D, pos: Vector3, color: Color) -> void:
 	cylinder(parent, pos + Vector3(0, 1.25, 0), 0.24, 2.3, color, 0.65)
 	for y in [0.45, 1.15, 1.85, 2.4]:
 		cylinder(parent, pos + Vector3(0, y, 0), 0.48, 0.09, color.lightened(0.2), 0.85)
+
+static func imported_model(parent: Node3D, path: String, pos: Vector3, height: float, yaw: float = 0.0) -> Node3D:
+	var wrapper := Node3D.new()
+	wrapper.position = pos
+	wrapper.rotation.y = yaw
+	parent.add_child(wrapper)
+	var instance: Node3D = load(path).instantiate()
+	var bounds := model_bounds(instance, Transform3D.IDENTITY)
+	var scale_factor := height / maxf(bounds.size.y, 0.001)
+	var center := bounds.get_center()
+	instance.scale = Vector3.ONE * scale_factor
+	instance.position = Vector3(-center.x, -bounds.position.y, -center.z) * scale_factor
+	wrapper.add_child(instance)
+	return wrapper
+
+static func model_bounds(node: Node3D, transform: Transform3D) -> AABB:
+	var result := AABB()
+	var first := true
+	for child in node.get_children():
+		if child is Node3D:
+			var child_transform: Transform3D = transform * child.transform
+			if child is MeshInstance3D:
+				var bounds: AABB = child_transform * child.get_aabb()
+				if first:
+					result = bounds
+					first = false
+				else:
+					result = result.merge(bounds)
+			var children := model_bounds(child, child_transform)
+			if children.size != Vector3.ZERO:
+				if first:
+					result = children
+					first = false
+				else:
+					result = result.merge(children)
+	return result
