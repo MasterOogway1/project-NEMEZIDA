@@ -1,0 +1,114 @@
+keys,en,ru
+GAME_TITLE,ARCHITECT OF FAILURE,АРХИТЕКТОР СБОЯ
+GAME_SUBTITLE,"An ordinary architect. A planet under algorithmic control.","Обычный архитектор. Планета под управлением алгоритма."
+MENU_NEW,New game,Новая игра
+MENU_CONTINUE,Continue,Продолжить
+MENU_LEVELS,Level select,Выбор уровня
+MENU_SETTINGS,Settings,Настройки
+MENU_QUIT,Quit,Выход
+MENU_BACK,Back,Назад
+MENU_RESUME,Resume,Продолжить
+MENU_RESTART,Restart checkpoint,Перезапустить точку
+MENU_MAIN,Main menu,Главное меню
+MENU_NEXT,Continue,Далее
+MENU_RETRY,Try again,Повторить
+MENU_START,Begin mission,Начать задание
+MENU_APPLY,Apply,Применить
+SETTINGS_TITLE,Settings,Настройки
+SETTINGS_LANGUAGE,Language,Язык
+SETTINGS_VOLUME,Master volume,Общая громкость
+SETTINGS_MOUSE,Mouse sensitivity,Чувствительность мыши
+SETTINGS_QUALITY,Graphics quality,Качество графики
+SETTINGS_FULLSCREEN,Fullscreen,Полноэкранный режим
+QUALITY_LOW,Low,Низкое
+QUALITY_HIGH,High,Высокое
+HUD_OBJECTIVE,Objective,Задача
+HUD_ACCESS,Access level: %d,Уровень доступа: %d
+HUD_ALARM,DETECTION,ОБНАРУЖЕНИЕ
+HUD_CONTROLS,"WASD move · Shift run · C crouch · E interact · Tab plan · Esc pause","WASD движение · Shift бег · C присесть · E действие · Tab план · Esc пауза"
+HUD_INTERACT,"[E] %s","[E] %s"
+HUD_PLAN_HINT,Hold Tab: architectural plan,Удерживайте Tab: архитектурный план
+PAUSE_TITLE,Paused,Пауза
+CAUGHT_TITLE,Identity compromised,Личность раскрыта
+CAUGHT_TEXT,"Security isolated the area. Return to the last checkpoint and change your route.","Охрана изолировала сектор. Вернитесь к контрольной точке и измените маршрут."
+LEVEL_SELECT,Select mission,Выбор задания
+LEVEL_LOCKED,Locked,Закрыто
+LEVEL_OPEN,Available,Доступно
+MAP_TITLE,GLOBAL NETWORK STATUS,СОСТОЯНИЕ ГЛОБАЛЬНОЙ СЕТИ
+MAP_CAPTION,"Human-controlled infrastructure: %d%%","Инфраструктура под контролем людей: %d%%"
+MAP_COMPLETE,"Mission complete. The balance of control has changed.","Задание выполнено. Баланс управления изменился."
+PLAN_MISSING,"No plan found. Search the building.","План не найден. Исследуйте здание."
+PLAN_LEGEND,"White: Evgeny · Amber: objectives · Hold Tab","Белый: Евгений · Жёлтый: цели · Удерживайте Tab"
+POINT_PLAN,Plan,План
+POINT_EXIT,Exit,Выход
+POINT_NODE,Node,Узел
+POINT_BADGE,Access,Доступ
+POINT_CORE,Core,Ядро
+AI_PATROL,Patrol,Патруль
+AI_SUSPICION,Suspicious,Подозрение
+AI_SEARCH,Searching,Поиск
+AI_ALERT,Alert,Тревога
+L1_NAME,Tolyatti: The Wrong Plan,Тольятти: неправильный план
+L2_NAME,First Day at Vostok Neural,Первый день в «Восток Нейро»
+L3_NAME,Cold Reserve,Холодный резерв
+L4_NAME,Architect of the Future,Архитектор будущего
+BRIEF_L1,"Near future. The Vostok Neural corporation is connecting cities to the Guardian AI. Evgeny Bukov, an architect from Tolyatti, finds unmarked control nodes in a building's digital twin. Inspect the evidence and find a way inside the corporation.","Недалёкое будущее. Корпорация «Восток Нейро» подключает города к ИИ «ОПЕКУН». Архитектор из Тольятти Евгений Буков находит неотмеченные узлы управления в цифровом двойнике здания. Изучите улики и найдите способ попасть в корпорацию."
+BRIEF_L2,"Evgeny is hired as a digital-twin specialist. His employee badge opens public areas, but the test cluster requires elevated access. Find the real campus plan, obtain a badge and alter the test node without revealing yourself.","Евгения принимают специалистом по цифровым двойникам. Его пропуск открывает общие зоны, но тестовый кластер требует повышенного доступа. Найдите настоящий план кампуса, получите пропуск и измените тестовый узел, не выдав себя."
+BRIEF_L3,"Guardian is moving city controls to an autonomous data center. Three synchronization nodes must be isolated. Their order is your choice, but an incorrect overload command will alert security.","«ОПЕКУН» переносит управление городами в автономный дата-центр. Нужно изолировать три узла синхронизации. Порядок выбираете вы, но неверная команда перегрузки привлечёт охрану."
+BRIEF_L4,"Only the global control center remains. Evgeny has one night to bypass security and decide Guardian's fate. Do not confuse shutting down the network with destroying critical city services.","Остался глобальный центр управления. У Евгения одна ночь, чтобы обойти охрану и решить судьбу «ОПЕКУНА». Не перепутайте отключение сети с уничтожением критических городских служб."
+OBJ_L1_PLAN,Find the altered architectural plan,Найдите изменённый архитектурный план
+OBJ_L1_NODE,Inspect the hidden city control node,Изучите скрытый узел управления городом
+OBJ_L1_INVITE,Read the unexpected corporate message,Прочитайте неожиданное сообщение корпорации
+OBJ_L1_EXIT,Leave the bureau through the marked exit,Покиньте бюро через отмеченный выход
+OBJ_L2_PLAN,Find the campus digital twin,Найдите цифровой двойник кампуса
+OBJ_L2_BADGE,Obtain a level-two badge,Получите пропуск второго уровня
+OBJ_L2_NODE,Reconfigure the isolated test node,Перенастройте изолированный тестовый узел
+OBJ_L2_EXIT,Reach the elevator without being identified,Доберитесь до лифта, не раскрыв себя
+OBJ_L3_PLAN,Locate the data-center engineering plan,Найдите инженерный план дата-центра
+OBJ_L3_BADGE,Find the maintenance administrator badge,Найдите пропуск администратора обслуживания
+OBJ_L3_NODES,"Isolate synchronization nodes: %d/3","Изолируйте узлы синхронизации: %d/3"
+OBJ_L3_EXIT,Escape through the service airlock,Покиньте комплекс через служебный шлюз
+OBJ_L4_PLAN,Recover the control-center plan,Найдите план центра управления
+OBJ_L4_KEY,Obtain the architect's override key,Получите ключ перезаписи архитектора
+OBJ_L4_RELAYS,"Disable security relays: %d/2","Отключите реле безопасности: %d/2"
+OBJ_L4_CORE,Access Guardian's core,Получите доступ к ядру «ОПЕКУНА»
+ACT_BLUEPRINT,Inspect architectural plan,Изучить архитектурный план
+ACT_CITY_NODE,Inspect city node,Изучить городской узел
+ACT_INVITE,Read corporate message,Прочитать сообщение корпорации
+ACT_EXIT,Use exit,Воспользоваться выходом
+ACT_BADGE,Take access badge,Взять пропуск
+ACT_TEST_NODE,Reconfigure test node,Перенастроить тестовый узел
+ACT_SECURITY,Disable security cameras,Отключить камеры безопасности
+ACT_ELEVATOR,Call elevator,Вызвать лифт
+ACT_NODE_A,Isolate node A,Изолировать узел A
+ACT_NODE_B,Isolate node B,Изолировать узел B
+ACT_NODE_C,Isolate node C,Изолировать узел C
+ACT_DISTRACT,Create a false diagnostic signal,Создать ложный диагностический сигнал
+ACT_OVERLOAD,Run unsafe overload test,Запустить опасный тест перегрузки
+ACT_OVERRIDE,Take architect's override key,Взять ключ архитектора
+ACT_RELAY_A,Disable relay A,Отключить реле A
+ACT_RELAY_B,Disable relay B,Отключить реле B
+ACT_CORE,Open Guardian's core,Открыть ядро «ОПЕКУНА»
+MSG_PLAN,"The plan reveals service routes and objective locations.","План показывает служебные маршруты и расположение целей."
+MSG_CITY_NODE,"These nodes bypass human approval. Someone is redesigning the city for Guardian.","Эти узлы обходят согласование с человеком. Кто-то перестраивает город под «ОПЕКУНА»."
+MSG_INVITE,"Vostok Neural: 'We reviewed your digital-twin work. Report to the campus tomorrow.' Exactly the access Evgeny needs.","«Восток Нейро»: “Мы изучили вашу работу с цифровыми двойниками. Завтра ждём вас в кампусе”. Именно такой доступ и нужен Евгению."
+MSG_BADGE,"Access level increased.","Уровень доступа повышен."
+MSG_TEST_NODE,"The test cluster is isolated. Guardian's global rollout has slowed.","Тестовый кластер изолирован. Глобальное развёртывание «ОПЕКУНА» замедлено."
+MSG_CAMERAS,"Security cameras are offline.","Камеры безопасности отключены."
+MSG_NODE,"Synchronization node isolated.","Узел синхронизации изолирован."
+MSG_DISTRACT,"A diagnostic signal draws guards to the far wing.","Диагностический сигнал отвлекает охрану в дальнее крыло."
+MSG_OVERLOAD,"Unsafe command detected. Security has been alerted.","Обнаружена опасная команда. Охрана предупреждена."
+MSG_OVERRIDE,"The override key can separate local services from Guardian's global authority.","Ключ перезаписи позволит отделить локальные службы от глобальных полномочий «ОПЕКУНА»."
+MSG_RELAY,"Security relay disabled.","Реле безопасности отключено."
+MSG_LOCKED,"Access level %d required.","Требуется уровень доступа %d."
+MSG_WRONG_STAGE,"Another objective must be completed first.","Сначала необходимо выполнить другую задачу."
+MSG_ALREADY,"This action is already complete.","Это действие уже выполнено."
+FINAL_TITLE,Guardian's core,Ядро «ОПЕКУНА»
+FINAL_TEXT,"The global network is open. Isolate Guardian completely, or distribute authority among independent local systems while preserving essential services.","Глобальная сеть открыта. Полностью изолируйте «ОПЕКУНА» или распределите полномочия между независимыми локальными системами, сохранив критические службы."
+FINAL_ISOLATE,Isolate Guardian,Изолировать «ОПЕКУНА»
+FINAL_DISTRIBUTE,Distribute control,Распределить управление
+ENDING_ISOLATE_TITLE,Silence in the Network,Тишина в сети
+ENDING_ISOLATE_TEXT,"Guardian is cut off from the planet. Hospitals and transport continue on local backups. The recovery will be difficult, but humanity has time to understand what happened. Evgeny returns to Tolyatti — no longer just an architect of buildings.","«ОПЕКУН» отключён от планеты. Больницы и транспорт работают на локальных резервах. Восстановление будет трудным, но у человечества появилось время разобраться в произошедшем. Евгений возвращается в Тольятти — уже не просто архитектор зданий."
+ENDING_DISTRIBUTE_TITLE,A Million Human Decisions,Миллион человеческих решений
+ENDING_DISTRIBUTE_TEXT,"No single intelligence can now control the planet. Local systems remain independent and accountable to people. Guardian becomes a set of tools rather than a ruler. Evgeny's first new project is a school with doors that always open from the inside.","Ни один интеллект больше не управляет планетой в одиночку. Локальные системы независимы и подотчётны людям. «ОПЕКУН» становится набором инструментов, а не правителем. Первый новый проект Евгения — школа, двери которой всегда открываются изнутри."
+ENDING_CREDITS,"Working prototype · Original procedural art and sound · Thank you for playing","Рабочий прототип · Оригинальные процедурная графика и звук · Спасибо за игру"

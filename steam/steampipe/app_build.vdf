@@ -1,0 +1,19 @@
+"AppBuild"
+{
+    "AppID" "0" // Заменить на настоящий AppID. Не загружать с нулевым ID.
+    "Desc" "Architect of Failure - Windows release"
+    "ContentRoot" "../../build/windows/"
+    "BuildOutput" "../../build/steampipe_output/"
+    "Depots"
+    {
+        "0" // Заменить на настоящий Windows DepotID.
+        {
+            "FileMapping"
+            {
+                "LocalPath" "*"
+                "DepotPath" "."
+                "Recursive" "1"
+            }
+        }
+    }
+}
