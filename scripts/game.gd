@@ -2,6 +2,8 @@ extends Node3D
 
 const PlayerScript = preload("res://scripts/player.gd")
 const Levels = preload("res://scripts/level_data.gd")
+const CityData = preload("res://scripts/city_data.gd")
+const CITY_LEVEL := 4
 const BlueprintScript = preload("res://scripts/blueprint.gd")
 const WorldMapScript = preload("res://scripts/world_map.gd")
 const BackdropScript = preload("res://scripts/ui_backdrop.gd")
@@ -10,6 +12,8 @@ const ReticleScript = preload("res://scripts/ui_reticle.gd")
 var mode: String = "menu"
 var level_root: Node3D
 var player: CharacterBody3D
+var vehicle: VehicleBody3D
+var driving: bool = false
 var current_level_data: Dictionary = {}
 var level_index: int = 0
 var stage: int = 0
@@ -57,7 +61,7 @@ func _ready() -> void:
 	show_main_menu()
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--showcase="):
-			var showcase_level := clampi(argument.get_slice("=", 1).to_int(), 0, 3)
+			var showcase_level := clampi(argument.get_slice("=", 1).to_int(), 0, CITY_LEVEL)
 			start_level(showcase_level)
 			_begin_play()
 			if "--capture" in OS.get_cmdline_user_args() or "--capture-plan" in OS.get_cmdline_user_args() or "--tour" in OS.get_cmdline_user_args():
@@ -75,7 +79,14 @@ func _process(delta: float) -> void:
 	if mode == "playing" and is_instance_valid(player):
 		if tour_mode:
 			tour_time += delta
-			if tour_time < 1.4:
+			if level_index == CITY_LEVEL and is_instance_valid(vehicle):
+				if not driving:
+					enter_vehicle(vehicle)
+				if tour_time < 3.0:
+					Input.action_press("move_forward")
+				else:
+					Input.action_release("move_forward")
+			elif tour_time < 1.4:
 				Input.action_press("move_forward")
 			else:
 				Input.action_release("move_forward")
@@ -84,7 +95,7 @@ func _process(delta: float) -> void:
 		_update_hud()
 		blueprint.visible = Input.is_action_pressed("plan")
 		if blueprint.visible:
-			blueprint.player_position = player.global_position
+			blueprint.player_position = vehicle.global_position if driving and is_instance_valid(vehicle) else player.global_position
 			blueprint.queue_redraw()
 	if message_time > 0.0:
 		message_time -= delta
@@ -113,6 +124,7 @@ func _configure_input() -> void:
 		"sprint": [KEY_SHIFT],
 		"crouch": [KEY_C, KEY_CTRL],
 		"interact": [KEY_E],
+		"handbrake": [KEY_SPACE],
 		"plan": [KEY_TAB],
 		"pause": [KEY_ESCAPE],
 		"screenshot": [KEY_F12]
@@ -264,7 +276,7 @@ func start_new_game() -> void:
 	unlocked_level = 0
 	has_save = false
 	checkpoint_data.clear()
-	start_level(0)
+	start_level(CITY_LEVEL)
 
 func continue_game() -> void:
 	var config := ConfigFile.new()
@@ -284,6 +296,7 @@ func show_level_select() -> void:
 	_background()
 	var box := _screen_box()
 	_label(box, tr("LEVEL_SELECT"), 34)
+	_button(box, tr("CITY_NAME"), func(): start_level(CITY_LEVEL))
 	var names := ["L1_NAME", "L2_NAME", "L3_NAME", "L4_NAME"]
 	for i in range(4):
 		var caption: String = "%d. %s — %s" % [i + 1, tr(names[i]), tr("LEVEL_OPEN" if i <= unlocked_level else "LEVEL_LOCKED")]
@@ -293,26 +306,31 @@ func show_level_select() -> void:
 func start_level(index: int, saved: Dictionary = {}) -> void:
 	get_tree().paused = false
 	_clear_level()
-	level_index = clampi(index, 0, 3)
+	level_index = clampi(index, 0, CITY_LEVEL)
 	stage = int(saved.get("stage", 0))
-	access = int(saved.get("access", level_index))
-	has_plan = bool(saved.get("has_plan", false))
+	access = int(saved.get("access", 0 if level_index == CITY_LEVEL else level_index))
+	has_plan = true if level_index == CITY_LEVEL else bool(saved.get("has_plan", false))
 	nodes_done.assign(saved.get("nodes", []))
 	relays_done.assign(saved.get("relays", []))
 	alarm = 0.0
 	mode = "briefing"
 	level_root = Node3D.new()
-	level_root.name = "Mission%d" % (level_index + 1)
+	level_root.name = "City" if level_index == CITY_LEVEL else "Mission%d" % (level_index + 1)
 	level_root.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(level_root)
 	_setup_environment()
-	current_level_data = Levels.build(level_root, level_index, self)
+	current_level_data = CityData.build(level_root, self) if level_index == CITY_LEVEL else Levels.build(level_root, level_index, self)
+	vehicle = current_level_data.get("vehicle")
 	player = PlayerScript.new()
 	player.game = self
 	player.mouse_sensitivity = 0.0022 * float(settings["mouse"])
 	level_root.add_child(player)
 	var spawns: Array = current_level_data["checkpoints"]
 	player.position = spawns[clampi(stage, 0, spawns.size() - 1)]
+	if level_index == CITY_LEVEL:
+		player.position = saved.get("player_position", player.position)
+		if is_instance_valid(vehicle) and saved.has("vehicle"):
+			vehicle.restore_data(saved["vehicle"])
 	_restore_items()
 	_build_hud()
 	_save_checkpoint()
@@ -321,17 +339,28 @@ func start_level(index: int, saved: Dictionary = {}) -> void:
 func _setup_environment() -> void:
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
-	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("07111f")
+	if level_index == CITY_LEVEL:
+		var sky := Sky.new()
+		var sky_material := ProceduralSkyMaterial.new()
+		sky_material.sky_top_color = Color("477da0")
+		sky_material.sky_horizon_color = Color("d3b58e")
+		sky_material.ground_bottom_color = Color("27343b")
+		sky_material.ground_horizon_color = Color("d3b58e")
+		sky.sky_material = sky_material
+		environment.background_mode = Environment.BG_SKY
+		environment.sky = sky
+	else:
+		environment.background_mode = Environment.BG_COLOR
+		environment.background_color = Color("07111f")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("8fb9c7")
-	environment.ambient_light_energy = 0.48
+	environment.ambient_light_color = Color("b8d4df") if level_index == CITY_LEVEL else Color("8fb9c7")
+	environment.ambient_light_energy = 0.7 if level_index == CITY_LEVEL else 0.48
 	world.environment = environment
 	level_root.add_child(world)
 	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-58, -32, 0)
-	sun.light_color = Color("b8d4df")
-	sun.light_energy = 0.65
+	sun.rotation_degrees = Vector3(-38, -32, 0) if level_index == CITY_LEVEL else Vector3(-58, -32, 0)
+	sun.light_color = Color("ffe0b0") if level_index == CITY_LEVEL else Color("b8d4df")
+	sun.light_energy = 1.15 if level_index == CITY_LEVEL else 0.65
 	sun.shadow_enabled = int(settings["quality"]) == 1
 	level_root.add_child(sun)
 
@@ -342,10 +371,10 @@ func _show_briefing() -> void:
 	_clear_screen()
 	_background(Color(0.01, 0.025, 0.045, 0.93))
 	var box := _screen_box()
-	_label(box, "%02d / 04" % (level_index + 1), 18)
-	_label(box, tr("L%d_NAME" % (level_index + 1)), 34)
-	_label(box, tr("BRIEF_L%d" % (level_index + 1)), 20)
-	_button(box, tr("MENU_START"), _begin_play)
+	_label(box, tr("CITY_TAG") if level_index == CITY_LEVEL else "%02d / 04" % (level_index + 1), 18)
+	_label(box, tr("CITY_NAME") if level_index == CITY_LEVEL else tr("L%d_NAME" % (level_index + 1)), 34)
+	_label(box, tr("BRIEF_CITY") if level_index == CITY_LEVEL else tr("BRIEF_L%d" % (level_index + 1)), 20)
+	_button(box, tr("MENU_EXPLORE") if level_index == CITY_LEVEL else tr("MENU_START"), _begin_play)
 	_button(box, tr("MENU_MAIN"), show_main_menu)
 
 func _begin_play() -> void:
@@ -354,7 +383,7 @@ func _begin_play() -> void:
 	hud.show()
 	player.controls_enabled = true
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	show_message(tr("HUD_PLAN_HINT"), 5.0)
+	show_message(tr("HUD_CITY_HINT") if level_index == CITY_LEVEL else tr("HUD_PLAN_HINT"), 6.0)
 
 func show_pause() -> void:
 	if not is_instance_valid(player):
@@ -376,7 +405,7 @@ func resume_game() -> void:
 	get_tree().paused = false
 	_clear_screen()
 	mode = "playing"
-	player.controls_enabled = true
+	player.controls_enabled = not driving
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func show_settings(from: String) -> void:
@@ -471,6 +500,10 @@ func _load_progress_info() -> void:
 
 func _save_checkpoint() -> void:
 	checkpoint_data = {"level": level_index, "stage": stage, "access": access, "has_plan": has_plan, "nodes": nodes_done.duplicate(), "relays": relays_done.duplicate()}
+	if level_index == CITY_LEVEL and is_instance_valid(player):
+		checkpoint_data["player_position"] = vehicle.exit_position() if driving and is_instance_valid(vehicle) else player.position
+		if is_instance_valid(vehicle):
+			checkpoint_data["vehicle"] = vehicle.save_data()
 	var config := ConfigFile.new()
 	config.load("user://progress.cfg")
 	config.set_value("progress", "unlocked", unlocked_level)
@@ -525,7 +558,8 @@ func _build_hud() -> void:
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 3)
 	objective_panel.add_child(left)
-	var mission_tag := _label(left, "%02d / 04  //  %s" % [level_index + 1, tr("HUD_OBJECTIVE").to_upper()], 11, HORIZONTAL_ALIGNMENT_LEFT)
+	var mission_text := tr("CITY_TAG") if level_index == CITY_LEVEL else "%02d / 04" % (level_index + 1)
+	var mission_tag := _label(left, "%s  //  %s" % [mission_text, tr("HUD_OBJECTIVE").to_upper()], 11, HORIZONTAL_ALIGNMENT_LEFT)
 	mission_tag.modulate = Color("73cbd1")
 	objective_label = _label(left, "", 18, HORIZONTAL_ALIGNMENT_LEFT)
 	objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -542,7 +576,7 @@ func _build_hud() -> void:
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 4)
 	right_panel.add_child(right)
-	var alarm_title := _label(right, "SECURITY  //  " + tr("HUD_ALARM"), 11, HORIZONTAL_ALIGNMENT_LEFT)
+	var alarm_title := _label(right, ("VEHICLE  //  " + tr("HUD_FUEL")) if level_index == CITY_LEVEL else ("SECURITY  //  " + tr("HUD_ALARM")), 11, HORIZONTAL_ALIGNMENT_LEFT)
 	alarm_title.modulate = Color("e5a1aa")
 	alarm_bar = ProgressBar.new()
 	alarm_bar.max_value = 100
@@ -580,7 +614,7 @@ func _build_hud() -> void:
 	hud.add_child(subtitle_panel)
 	subtitle_label = _label(subtitle_panel, "", 17)
 	subtitle_panel.hide()
-	var controls := _label(hud, tr("HUD_CONTROLS"), 12)
+	var controls := _label(hud, tr("HUD_CITY_CONTROLS") if level_index == CITY_LEVEL else tr("HUD_CONTROLS"), 12)
 	controls.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	controls.offset_left = -500
 	controls.offset_right = 500
@@ -591,7 +625,8 @@ func _build_hud() -> void:
 	blueprint.rooms = current_level_data["rooms"]
 	blueprint.points = current_level_data["points"]
 	blueprint.has_plan = has_plan
-	blueprint.level_title = tr("L%d_NAME" % (level_index + 1))
+	blueprint.level_title = tr("CITY_NAME") if level_index == CITY_LEVEL else tr("L%d_NAME" % (level_index + 1))
+	blueprint.level_size = Vector2(CityData.CITY_SIZE, CityData.CITY_SIZE) if level_index == CITY_LEVEL else Vector2(30, 30)
 	blueprint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.add_child(blueprint)
 	_full_rect(blueprint)
@@ -602,16 +637,32 @@ func _update_hud() -> void:
 	if not is_instance_valid(objective_label):
 		return
 	objective_label.text = _objective_text()
+	blueprint.has_plan = has_plan
+	var target_available := not driving and is_instance_valid(player.current_target)
+	reticle.active = target_available
+	reticle.queue_redraw()
+	if level_index == CITY_LEVEL:
+		access_label.text = tr("CITY_DISTRICT")
+		var fuel: float = vehicle.fuel if is_instance_valid(vehicle) else 0.0
+		alarm_bar.value = fuel
+		alarm_fill.bg_color = Color("e76576") if fuel < 20.0 else Color("56b9c1")
+		alarm_fill.border_color = alarm_fill.bg_color
+		alarm_overlay.color = Color(0, 0, 0, 0)
+		prompt_panel.visible = driving or target_available
+		if driving:
+			prompt_label.text = tr("HUD_VEHICLE_CONTROLS")
+		elif target_available:
+			prompt_label.text = tr("HUD_INTERACT") % player.current_target.caption()
+		else:
+			prompt_label.text = ""
+		ai_label.text = vehicle.speed_text() if driving and is_instance_valid(vehicle) else tr("HUD_ON_FOOT")
+		return
 	access_label.text = tr("HUD_ACCESS") % access
 	alarm_bar.value = alarm
 	alarm_fill.bg_color = Color("e76576") if alarm > 55.0 else Color("d6b76c") if alarm > 20.0 else Color("56b9c1")
 	alarm_fill.border_color = alarm_fill.bg_color
 	alarm_overlay.color = Color(0.55, 0.02, 0.04, alarm * 0.0009)
-	blueprint.has_plan = has_plan
-	var target_available := is_instance_valid(player.current_target)
 	prompt_panel.visible = target_available
-	reticle.active = target_available
-	reticle.queue_redraw()
 	if target_available:
 		prompt_label.text = tr("HUD_INTERACT") % player.current_target.caption()
 	else:
@@ -637,10 +688,30 @@ func _objective_text() -> String:
 			if stage == 2:
 				return tr("OBJ_L4_RELAYS") % relays_done.size()
 			return tr(["OBJ_L4_PLAN", "OBJ_L4_KEY", "OBJ_L4_RELAYS", "OBJ_L4_CORE"][mini(stage, 3)])
+		4:
+			return tr("OBJ_CITY")
 	return ""
 
 func interact_with(item: Node3D) -> void:
 	if mode != "playing" or not item.is_in_group("interactable"):
+		return
+	var action: String = item.action_id
+	if action == "vehicle":
+		enter_vehicle(item)
+		return
+	if action.begins_with("mission_"):
+		var mission_index := action.trim_prefix("mission_").to_int()
+		if mission_index > unlocked_level:
+			show_message(tr("MSG_MISSION_LOCKED"))
+			play_sound("error")
+			return
+		_save_checkpoint()
+		start_level(mission_index)
+		return
+	if action == "city_home":
+		_save_checkpoint()
+		show_message(tr("MSG_CITY_HOME"))
+		play_sound("success")
 		return
 	if item.completed and item.action_id != "distract":
 		show_message(tr("MSG_ALREADY"))
@@ -649,7 +720,6 @@ func interact_with(item: Node3D) -> void:
 		show_message(tr("MSG_LOCKED") % item.required_access)
 		play_sound("error")
 		return
-	var action: String = item.action_id
 	if action == "security":
 		item.set_completed()
 		for camera in get_tree().get_nodes_in_group("security_camera"):
@@ -730,6 +800,44 @@ func interact_with(item: Node3D) -> void:
 	_save_checkpoint()
 	play_sound("success")
 
+func enter_vehicle(car: Node3D) -> void:
+	if level_index != CITY_LEVEL or driving or mode != "playing":
+		return
+	vehicle = car
+	driving = true
+	player.controls_enabled = false
+	player.current_target = null
+	player.collision_layer = 0
+	player.collision_mask = 0
+	player.set_physics_process(false)
+	player.camera.current = false
+	vehicle.occupied = true
+	vehicle.driver_camera.current = true
+	play_sound("terminal")
+	_save_checkpoint()
+
+func exit_vehicle() -> void:
+	if not driving or not is_instance_valid(vehicle):
+		return
+	if vehicle.speed_kph > 12.0:
+		show_message(tr("MSG_VEHICLE_STOP"))
+		return
+	var exit_pos: Vector3 = vehicle.exit_position()
+	driving = false
+	vehicle.occupied = false
+	vehicle.engine_force = 0.0
+	vehicle.brake = 4.0
+	vehicle.driver_camera.current = false
+	player.position = exit_pos
+	player.velocity = Vector3.ZERO
+	player.collision_layer = 2
+	player.collision_mask = 1
+	player.set_physics_process(true)
+	player.camera.current = true
+	player.controls_enabled = mode == "playing"
+	play_sound("terminal")
+	_save_checkpoint()
+
 func add_detection(amount: float) -> void:
 	if mode != "playing":
 		return
@@ -765,11 +873,10 @@ func complete_level() -> void:
 	player.controls_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	unlocked_level = maxi(unlocked_level, mini(level_index + 1, 3))
-	var next_level := mini(level_index + 1, 3)
 	var config := ConfigFile.new()
 	config.load("user://progress.cfg")
 	config.set_value("progress", "unlocked", unlocked_level)
-	config.set_value("checkpoint", "data", {"level": next_level, "stage": 0, "access": next_level, "has_plan": false, "nodes": [], "relays": []})
+	config.set_value("checkpoint", "data", {"level": CITY_LEVEL, "stage": 0, "access": 0, "has_plan": true, "nodes": [], "relays": []})
 	config.save("user://progress.cfg")
 	has_save = true
 	hud.hide()
@@ -783,6 +890,7 @@ func complete_level() -> void:
 	map.custom_minimum_size = Vector2(820, 350)
 	box.add_child(map)
 	_button(box, tr("MENU_NEXT"), func(): start_level(level_index + 1))
+	_button(box, tr("MENU_CITY"), func(): start_level(CITY_LEVEL))
 	_button(box, tr("MENU_MAIN"), show_main_menu)
 	play_sound("success")
 
@@ -833,6 +941,8 @@ func _clear_level() -> void:
 		level_root.queue_free()
 	level_root = null
 	player = null
+	vehicle = null
+	driving = false
 	alarm = 0.0
 
 func _exit_tree() -> void:

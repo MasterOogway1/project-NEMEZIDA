@@ -112,3 +112,31 @@ ENDING_ISOLATE_TEXT,"Guardian is cut off from the planet. Hospitals and transpor
 ENDING_DISTRIBUTE_TITLE,A Million Human Decisions,Миллион человеческих решений
 ENDING_DISTRIBUTE_TEXT,"No single intelligence can now control the planet. Local systems remain independent and accountable to people. Guardian becomes a set of tools rather than a ruler. Evgeny's first new project is a school with doors that always open from the inside.","Ни один интеллект больше не управляет планетой в одиночку. Локальные системы независимы и подотчётны людям. «ОПЕКУН» становится набором инструментов, а не правителем. Первый новый проект Евгения — школа, двери которой всегда открываются изнутри."
 ENDING_CREDITS,"Working prototype · Original procedural art and sound · Thank you for playing","Рабочий прототип · Оригинальные процедурная графика и звук · Спасибо за игру"
+CITY_NAME,"Tolyatti: Open District","Тольятти: открытый район"
+CITY_TAG,OPEN CITY // 01,ОТКРЫТЫЙ ГОРОД // 01
+BRIEF_CITY,"Evgeny can leave home, walk around the district or take the car. The architecture bureau is waiting, but the city is now open for exploration. Completed missions can be revisited from the level-select menu.","Евгений может выйти из дома, пройтись по району или взять машину. Архитектурное бюро ждёт, но город теперь открыт для исследования. Пройденные задания доступны в меню выбора уровня."
+MENU_EXPLORE,Enter the city,Выйти в город
+MENU_CITY,Return to the city,Вернуться в город
+ACT_HOME,Save progress at home,Сохраниться дома
+ACT_VEHICLE,Get in the car,Сесть в машину
+ACT_MISSION_0,Enter the architecture bureau,Войти в архитектурное бюро
+ACT_MISSION_1,Enter Vostok Neural,Войти в «Восток Нейро»
+ACT_MISSION_2,Enter the data center,Войти в дата-центр
+ACT_MISSION_3,Enter Guardian's core,Войти в ядро «ОПЕКУНА»
+HUD_CITY_HINT,"E interact · Tab city map · find your car near the garage","E действие · Tab карта города · машина находится у гаража"
+HUD_CITY_CONTROLS,"WASD move/drive · E interact/exit · Space handbrake · Tab map · Esc pause","WASD идти/ехать · E действие/выйти · Space ручник · Tab карта · Esc пауза"
+HUD_VEHICLE_CONTROLS,"[E] Exit vehicle · Space handbrake","[E] Выйти из машины · Space ручник"
+HUD_FUEL,FUEL,ТОПЛИВО
+HUD_SPEED,"%d km/h","%d км/ч"
+HUD_ON_FOOT,ON FOOT,ПЕШКОМ
+CITY_DISTRICT,"Avtozavodsky district · Free exploration","Автозаводский район · Свободное исследование"
+OBJ_CITY,"Drive to the architecture bureau or explore the district","Доберитесь до архитектурного бюро или исследуйте район"
+MSG_CITY_HOME,"Progress saved. The city and your car will be here when you return.","Прогресс сохранён. Город и ваша машина будут ждать вашего возвращения."
+MSG_MISSION_LOCKED,"Complete the previous mission to unlock this location.","Завершите предыдущее задание, чтобы открыть эту локацию."
+MSG_VEHICLE_STOP,Slow down before leaving the vehicle,Снизьте скорость перед выходом из машины
+MSG_FUEL_EMPTY,"The fuel tank is empty. Return home to continue from a checkpoint.","Топливо закончилось. Вернитесь домой, чтобы продолжить с контрольной точки."
+POINT_HOME,Home,Дом
+POINT_GARAGE,Garage,Гараж
+POINT_BUREAU,Bureau,Бюро
+POINT_VOSTOK,Vostok Neural,Восток Нейро
+POINT_DATACENTER,Data center,Дата-центр
