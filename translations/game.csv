@@ -44,6 +44,7 @@ POINT_EXIT,Exit,Выход
 POINT_NODE,Node,Узел
 POINT_BADGE,Access,Доступ
 POINT_CORE,Core,Ядро
+POINT_GPU,Graphics card,Видеокарта
 AI_PATROL,Patrol,Патруль
 AI_SUSPICION,Suspicious,Подозрение
 AI_SEARCH,Searching,Поиск
@@ -71,14 +72,15 @@ OBJ_L3_EXIT,Escape through the service airlock,Покиньте комплекс
 OBJ_L4_PLAN,Recover the control-center plan,Найдите план центра управления
 OBJ_L4_KEY,Obtain the architect's override key,Получите ключ перезаписи архитектора
 OBJ_L4_RELAYS,"Disable security relays: %d/2","Отключите реле безопасности: %d/2"
+OBJ_L4_GPU,Steal the NVIDIA graphics card,Украдите видеокарту NVIDIA
 OBJ_L4_CORE,Access Guardian's core,Получите доступ к ядру «ОПЕКУНА»
 ACT_BLUEPRINT,Inspect architectural plan,Изучить архитектурный план
 ACT_CITY_NODE,Inspect city node,Изучить городской узел
 ACT_INVITE,Read corporate message,Прочитать сообщение корпорации
 ACT_EXIT,Use exit,Воспользоваться выходом
-ACT_BADGE,Take access badge,Взять пропуск
+ACT_BADGE,Steal access badge,Украсть пропуск
 ACT_TEST_NODE,Reconfigure test node,Перенастроить тестовый узел
-ACT_SECURITY,Disable security cameras,Отключить камеры безопасности
+ACT_SECURITY,Hack security system,Взломать систему безопасности
 ACT_ELEVATOR,Call elevator,Вызвать лифт
 ACT_NODE_A,Isolate node A,Изолировать узел A
 ACT_NODE_B,Isolate node B,Изолировать узел B
@@ -140,3 +142,11 @@ POINT_GARAGE,Garage,Гараж
 POINT_BUREAU,Bureau,Бюро
 POINT_VOSTOK,Vostok Neural,Восток Нейро
 POINT_DATACENTER,Data center,Дата-центр
+HUD_INVENTORY,Inventory,Инвентарь
+INV_BADGE,Badge,Пропуск
+INV_HACK,Hack,Взлом
+INV_GPU,GPU,Видеокарта
+HUD_HACKING,"Bypassing security: %d%%","Обход защиты: %d%%"
+MSG_BADGE_REQUIRED,An employee badge is required,Требуется пропуск сотрудника
+ACT_GPU,Take the graphics card,Взять видеокарту
+MSG_GPU,"Graphics card acquired. Guardian's core is ready for the final override.","Видеокарта получена. Ядро «ОПЕКУНА» готово к финальной перезаписи."

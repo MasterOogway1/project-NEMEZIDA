@@ -15,11 +15,19 @@ static func build(root: Node3D, index: int, game: Node) -> Dictionary:
 			return level_four(root, game)
 	return {}
 
-static func base(root: Node3D, floor_color: Color, wall_color: Color, accent: Color, lamp_color: Color) -> void:
-	F.box(root, Vector3(0, -0.25, 0), Vector3(30, 0.5, 30), floor_color)
-	for offset in [-10.0, -5.0, 0.0, 5.0, 10.0]:
-		F.box(root, Vector3(offset, 0.006, 0), Vector3(0.025, 0.012, 30), floor_color.darkened(0.2), false)
-		F.box(root, Vector3(0, 0.006, offset), Vector3(30, 0.012, 0.025), floor_color.darkened(0.2), false)
+static func base(root: Node3D, floor_color: Color, wall_color: Color, accent: Color, lamp_color: Color, style: String = "carpet") -> void:
+	var floor_node := F.box(root, Vector3(0, -0.25, 0), Vector3(30, 0.5, 30), floor_color)
+	floor_node.set_meta("surface", "wood" if style == "wood" else "carpet")
+	if style == "wood":
+		F.apply_material(floor_node, F.textured_material("wood_floor", "WoodFloor051_1K-JPG", Color.WHITE, 6.0))
+	elif style == "dark_carpet":
+		F.apply_material(floor_node, F.textured_material("carpet", "Carpet002_1K-JPG", floor_color.lightened(0.3), 7.5))
+	else:
+		F.apply_material(floor_node, F.textured_material("carpet", "Carpet002_1K-JPG", floor_color.lightened(0.4), 7.5))
+	if style != "wood":
+		for offset in [-10.0, -5.0, 0.0, 5.0, 10.0]:
+			F.box(root, Vector3(offset, 0.006, 0), Vector3(0.018, 0.012, 30), floor_color.darkened(0.2), false)
+			F.box(root, Vector3(0, 0.006, offset), Vector3(30, 0.012, 0.018), floor_color.darkened(0.2), false)
 	var ceiling := F.box(root, Vector3(0, 3.35, 0), Vector3(30, 0.15, 30), Color("152630"), false)
 	ceiling.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	F.wall_x(root, -15, -15, 15, wall_color)
@@ -39,8 +47,7 @@ static func base(root: Node3D, floor_color: Color, wall_color: Color, accent: Co
 	for x in [-10.0, 0.0, 10.0]:
 		for z in [-10.0, 0.0, 10.0]:
 			F.light(root, Vector3(x, 2.8, z), lamp_color, 0.7, 8.0)
-			F.box(root, Vector3(x, 3.05, z), Vector3(1.8, 0.05, 0.28), lamp_color, false, 1.0)
-			F.box(root, Vector3(x, 3.12, z), Vector3(2.1, 0.08, 0.45), accent.darkened(0.4), false)
+			F.imported_model(root, "res://assets/models/props/ceiling_light.glb", Vector3(x, 2.45, z), 0.75)
 
 static func point(x: float, z: float, label: String) -> Dictionary:
 	return {"x": x + 15.0, "z": z + 15.0, "label": label}
@@ -49,7 +56,7 @@ static func room(x: float, z: float, width: float, depth: float) -> Rect2:
 	return Rect2(x + 15.0, z + 15.0, width, depth)
 
 static func level_one(root: Node3D, game: Node) -> Dictionary:
-	base(root, Color("45484a"), Color("718087"), Color("b49a67"), Color("ffe0a3"))
+	base(root, Color("45484a"), Color("a7a39a"), Color("b49a67"), Color("ffe0a3"), "wood")
 	F.wall_x(root, 4, -15, 15, Color("718087"), 0, 3)
 	F.wall_z(root, -5, -15, 4, Color("718087"), -4, 3)
 	F.wall_z(root, 6, 4, 15, Color("718087"), 9, 2.6)
@@ -63,16 +70,21 @@ static func level_one(root: Node3D, game: Node) -> Dictionary:
 	F.sign_text(root, Vector3(-10, 2.3, 3.85), "АРХИТЕКТУРНОЕ БЮРО")
 	F.plant(root, Vector3(-13, 0, 12))
 	F.plant(root, Vector3(12, 0, 7))
-	F.floor_zone(root, Vector3(-10, 0, 9), Vector2(7, 5), Color("5c5548"))
-	F.floor_zone(root, Vector3(8.5, 0, 10), Vector2(10, 6), Color("405b5b"))
+	F.floor_zone(root, Vector3(-10, 0, 9), Vector2(7, 5), Color("5c5548"), "carpet")
+	F.floor_zone(root, Vector3(8.5, 0, 10), Vector2(10, 6), Color("405b5b"), "carpet")
 	F.desk(root, Vector3(-10, 0, 6.5), Color("81715a"))
 	F.architectural_model(root, Vector3(-10, 0, 6.5))
 	F.bench(root, Vector3(8, 0, 12), Color("657a71"), PI)
 	F.desk(root, Vector3(9, 0, 7), Color("81715a"))
 	F.laptop(root, Vector3(9, 0.82, 7), PI)
-	F.box(root, Vector3(-13.7, 1.0, 0), Vector3(1.6, 2.0, 0.55), Color("554d43"))
-	for y in [0.35, 0.85, 1.35, 1.85]:
-		F.box(root, Vector3(-13.7, y, -0.3), Vector3(1.5, 0.07, 0.65), Color("aa9167"), false)
+	F.imported_model(root, "res://assets/models/props/shelf.glb", Vector3(-13.7, 0, 0), 0.75)
+	F.imported_model(root, "res://assets/models/props/floor_lamp.glb", Vector3(-12.5, 0, 11.5), 1.65)
+	F.imported_model(root, "res://assets/models/props/floor_lamp.glb", Vector3(12.5, 0, 12.5), 1.65)
+	F.imported_model(root, "res://assets/models/props/printer.glb", Vector3(-13.7, 0.75, 0), 0.35)
+	F.imported_model(root, "res://assets/models/props/trash_bin.glb", Vector3(-12.3, 0, 8.5), 0.42)
+	F.picture(root, Vector3(-14.76, 1.8, 9), Vector2(1.0, 1.4), "res://assets/art/armored.svg", "СТАЛЬНОЕ БУДУЩЕЕ", PI * 0.5)
+	F.picture(root, Vector3(-14.76, 1.75, -2.5), Vector2(1.5, 0.95), "res://assets/art/city.svg", "", PI * 0.5)
+	F.picture(root, Vector3(14.76, 1.75, 9), Vector2(1.5, 0.95), "res://assets/art/abstract.svg", "", -PI * 0.5)
 	for x in [-12.9, -12.65, -12.4]:
 		F.cylinder(root, Vector3(x, 0.65, 7), 0.075, 1.3, Color("d8cfb4"))
 	F.light(root, Vector3(-10, 2.35, 8), Color("ffc979"), 1.15, 6.0)
@@ -98,7 +110,7 @@ static func level_two(root: Node3D, game: Node) -> Dictionary:
 	F.desk(root, Vector3(6, 0, 10), Color("3f6670"))
 	F.interactable(root, Vector3(6, 1.25, 10), "plan", "ACT_BLUEPRINT", 1, Color("d3b56c"), Vector3(0.85, 0.08, 0.6))
 	F.interactable(root, Vector3(-11, 1.0, 0), "badge", "ACT_BADGE", 1, Color("d3b56c"), Vector3(0.5, 0.1, 0.35))
-	F.interactable(root, Vector3(-12, 1.0, 10), "security", "ACT_SECURITY", 1)
+	F.interactable(root, Vector3(-12, 1.0, 10), "security", "ACT_SECURITY", 2)
 	F.interactable(root, Vector3(10, 1.0, -10), "test_node", "ACT_TEST_NODE", 2)
 	F.interactable(root, Vector3(0, 1.0, -14.65), "exit", "ACT_ELEVATOR", 1, Color("3d9d79"), Vector3(2.0, 2.2, 0.18))
 	F.sign_text(root, Vector3(0, 2.55, 4.82), "VOSTOK NEURAL / ВОСТОК НЕЙРО")
@@ -108,7 +120,7 @@ static func level_two(root: Node3D, game: Node) -> Dictionary:
 	for pos in [Vector3(-3,0,11), Vector3(11,0,8), Vector3(-12,0,-8), Vector3(5,0,1)]:
 		F.plant(root, pos)
 	F.floor_zone(root, Vector3(5, 0, 10), Vector2(17, 6), Color("294b55"))
-	F.floor_zone(root, Vector3(9, 0, -10), Vector2(10, 7), Color("183b48"))
+	F.floor_zone(root, Vector3(9, 0, -10), Vector2(10, 7), Color("183b48"), "hard")
 	F.floor_zone(root, Vector3(-11, 0, 9.5), Vector2(5, 6), Color("45504c"))
 	F.desk(root, Vector3(8.5, 0, 10), Color("58757a"))
 	F.monitor(root, Vector3(8.5, 0.82, 10), PI, Color("68e0d4"))
@@ -119,6 +131,13 @@ static func level_two(root: Node3D, game: Node) -> Dictionary:
 		F.box(root, Vector3(x, 2.35, -12.8), Vector3(0.75, 0.12, 0.75), Color("64d9d5"), false, 0.75)
 		F.light(root, Vector3(x, 2.4, -11.5), Color("58c7cf"), 0.65, 4.0)
 	F.sign_text(root, Vector3(9, 2.4, -14.45), "ИСПЫТАТЕЛЬНАЯ ЗОНА", Color("8ee8e2"))
+	F.imported_model(root, "res://assets/models/props/shelf.glb", Vector3(-13.5, 0, 6), 0.75)
+	F.imported_model(root, "res://assets/models/props/floor_lamp.glb", Vector3(-4, 0, 13), 1.65)
+	F.imported_model(root, "res://assets/models/props/floor_lamp.glb", Vector3(13, 0, 12.5), 1.65)
+	F.imported_model(root, "res://assets/models/props/printer.glb", Vector3(-13.5, 0.75, 6), 0.35)
+	F.imported_model(root, "res://assets/models/props/trash_bin.glb", Vector3(4.5, 0, 9), 0.42)
+	F.picture(root, Vector3(-14.76, 1.75, 10), Vector2(1.55, 1.0), "res://assets/art/city.svg", "", PI * 0.5)
+	F.picture(root, Vector3(14.76, 1.75, 8), Vector2(1.55, 1.0), "res://assets/art/abstract.svg", "", -PI * 0.5)
 	F.guard(root, Vector3(5, 0.1, 1), [Vector3(5,0.1,1), Vector3(12,0.1,1), Vector3(12,0.1,-2), Vector3(5,0.1,-2)], game, "business_man")
 	F.guard(root, Vector3(-4, 0.1, -8), [Vector3(-4,0.1,-8), Vector3(5,0.1,-8), Vector3(5,0.1,-12), Vector3(-4,0.1,-12)], game)
 	F.security_camera(root, Vector3(-2, 2.65, 4.6), 0, game)
@@ -151,8 +170,11 @@ static func level_three(root: Node3D, game: Node) -> Dictionary:
 		F.server(root, Vector3(x, 0, -6))
 	F.interactable(root, Vector3(0, 1.0, 14.65), "exit", "ACT_EXIT", 2, Color("3d9d79"), Vector3(1.8, 2.1, 0.18))
 	F.sign_text(root, Vector3(0, 2.55, 3.82), "COLD RESERVE / ХОЛОДНЫЙ РЕЗЕРВ")
-	F.floor_zone(root, Vector3(0, 0, 0), Vector2(28, 4.5), Color("1d3b49"))
-	F.floor_zone(root, Vector3(0, 0, -10), Vector2(28, 8), Color("102f40"))
+	F.imported_model(root, "res://assets/models/props/shelf.glb", Vector3(-13.5, 0, 12), 0.75)
+	F.imported_model(root, "res://assets/models/props/floor_lamp.glb", Vector3(13, 0, 12.5), 1.65)
+	F.picture(root, Vector3(-14.76, 1.75, 8), Vector2(1.5, 0.95), "res://assets/art/abstract.svg", "", PI * 0.5)
+	F.floor_zone(root, Vector3(0, 0, 0), Vector2(28, 4.5), Color("1d3b49"), "hard")
+	F.floor_zone(root, Vector3(0, 0, -10), Vector2(28, 8), Color("102f40"), "hard")
 	F.floor_zone(root, Vector3(-11, 0, 10), Vector2(5.5, 5.5), Color("294b55"))
 	F.desk(root, Vector3(-11, 0, 12), Color("35586a"))
 	F.monitor(root, Vector3(-11, 0.82, 12), PI, Color("75cde8"))
@@ -180,7 +202,7 @@ static func level_three(root: Node3D, game: Node) -> Dictionary:
 	}
 
 static func level_four(root: Node3D, game: Node) -> Dictionary:
-	base(root, Color("1b2033"), Color("3d405d"), Color("8a5ba6"), Color("d4b5ff"))
+	base(root, Color("1b2033"), Color("3d405d"), Color("8a5ba6"), Color("d4b5ff"), "dark_carpet")
 	F.wall_x(root, 5, -15, 15, Color("343855"), 0, 3)
 	F.wall_x(root, -3, -15, 15, Color("343855"), 0, 3)
 	F.wall_z(root, -5, -15, 5, Color("343855"), -8, 3)
@@ -191,13 +213,14 @@ static func level_four(root: Node3D, game: Node) -> Dictionary:
 	F.interactable(root, Vector3(-10, 1.0, -9), "relay_a", "ACT_RELAY_A", 4, Color("66558c"))
 	F.interactable(root, Vector3(10, 1.0, -9), "relay_b", "ACT_RELAY_B", 4, Color("66558c"))
 	F.interactable(root, Vector3(0, 1.25, -12), "core", "ACT_CORE", 4, Color("8b497b"), Vector3(2.2, 2.5, 0.6))
+	F.interactable(root, Vector3(0, 1.05, -10.8), "gpu", "ACT_GPU", 4, Color("76b36a"), Vector3(0.8, 0.4, 0.25))
 	for x in [-11.0, -7.0, 7.0, 11.0]:
 		F.server(root, Vector3(x, 0, -12.8), Color("252943"))
 	for z in [-6.0, 0.0, 9.0]:
 		F.box(root, Vector3(0, 0.02, z), Vector3(1.4, 0.035, 2.3), Color("70518c"), false, 0.65)
 	F.sign_text(root, Vector3(0, 2.55, 4.82), "GUARDIAN / ОПЕКУН")
-	F.floor_zone(root, Vector3(0, 0, 10), Vector2(27, 6), Color("30334c"))
-	F.floor_zone(root, Vector3(0, 0, -9), Vector2(8.5, 10), Color("312745"))
+	F.floor_zone(root, Vector3(0, 0, 10), Vector2(27, 6), Color("30334c"), "hard")
+	F.floor_zone(root, Vector3(0, 0, -9), Vector2(8.5, 10), Color("312745"), "hard")
 	F.desk(root, Vector3(-11, 0, 12), Color("4b4d6a"))
 	F.monitor(root, Vector3(-11, 0.82, 12), PI, Color("c792e7"))
 	for pos in [Vector3(-4.3, 0, -7), Vector3(4.3, 0, -7), Vector3(-4.3, 0, -12), Vector3(4.3, 0, -12)]:
@@ -221,6 +244,6 @@ static func level_four(root: Node3D, game: Node) -> Dictionary:
 		"capture": Vector3(0, 0.1, -4),
 		"capture_yaw": 0.0,
 		"rooms": [room(-14.8, 5.2, 29.5, 9.5), room(-14.8, -2.8, 29.5, 7.5), room(-14.8, -14.8, 9.5, 11.5), room(-4.7, -14.8, 9.5, 11.5), room(5.3, -14.8, 9.5, 11.5)],
-		"points": [point(-11, 10, "POINT_PLAN"), point(11, 10, "POINT_BADGE"), point(-10, -9, "POINT_NODE"), point(10, -9, "POINT_NODE"), point(0, -12, "POINT_CORE")],
+		"points": [point(-11, 10, "POINT_PLAN"), point(11, 10, "POINT_BADGE"), point(-10, -9, "POINT_NODE"), point(10, -9, "POINT_NODE"), point(0, -10.8, "POINT_GPU"), point(0, -12, "POINT_CORE")],
 		"checkpoints": [Vector3(0, 0.1, 13), Vector3(-9, 0.1, 8), Vector3(8, 0.1, 8), Vector3(0, 0.1, -5)]
 	}

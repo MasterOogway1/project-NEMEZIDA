@@ -9,6 +9,9 @@ var mesh: MeshInstance3D
 
 func set_completed() -> void:
 	completed = true
+	if action_id in ["badge", "gpu"]:
+		collision_layer = 0
+		hide()
 	if is_instance_valid(mesh):
 		var material := StandardMaterial3D.new()
 		material.albedo_color = Color("4bd6a0")

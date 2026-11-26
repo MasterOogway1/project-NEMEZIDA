@@ -14,6 +14,7 @@ var mouse_sensitivity: float = MOUSE_SENSITIVITY
 var crouching: bool = false
 var noise_level: float = 0.0
 var step_clock: float = 0.0
+var current_surface: String = "hard"
 var current_target: Node3D
 
 func _ready() -> void:
@@ -71,13 +72,15 @@ func _physics_process(delta: float) -> void:
 	collision.shape.height = lerpf(collision.shape.height, 1.05 if crouching else 1.75, 12.0 * delta)
 	collision.position.y = collision.shape.height * 0.5
 	var moving := Vector2(velocity.x, velocity.z).length()
+	current_surface = surface_underfoot()
 	noise_level = 0.0
 	if moving > 0.2 and is_on_floor() and controls_enabled:
-		noise_level = 0.25 if crouching else (1.0 if speed == SPRINT_SPEED else 0.55)
+		var base_noise := 0.25 if crouching else (1.0 if speed == SPRINT_SPEED else 0.55)
+		noise_level = base_noise * (0.55 if current_surface == "carpet" else 1.0)
 		step_clock -= delta
 		if step_clock <= 0.0:
 			step_clock = 0.58 if crouching else (0.28 if speed == SPRINT_SPEED else 0.42)
-			game.play_sound("step", -18.0 if crouching else -11.0)
+			game.play_footstep(current_surface, -18.0 if crouching else -11.0)
 	else:
 		step_clock = 0.0
 	_find_target()
@@ -94,6 +97,17 @@ func _find_target() -> void:
 		var collider: Object = result.get("collider")
 		if collider is Node and collider.is_in_group("interactable"):
 			current_target = collider
+
+func surface_underfoot() -> String:
+	var from := global_position + Vector3(0, 0.25, 0)
+	var to := global_position - Vector3(0, 0.5, 0)
+	var query := PhysicsRayQueryParameters3D.create(from, to, 1)
+	var result := get_world_3d().direct_space_state.intersect_ray(query)
+	if not result.is_empty():
+		var collider: Object = result.get("collider")
+		if collider is Node and collider.has_meta("surface"):
+			return String(collider.get_meta("surface"))
+	return "hard"
 
 func eye_position() -> Vector3:
 	return camera.global_position

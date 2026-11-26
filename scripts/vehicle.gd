@@ -1,5 +1,6 @@
 extends VehicleBody3D
 
+const SedanScene = preload("res://assets/models/vehicles/sedan.glb")
 const MAX_STEERING := 0.52
 const ENGINE_FORCE := 760.0
 const REVERSE_FORCE := 420.0
@@ -24,7 +25,7 @@ func _ready() -> void:
 	_build_chassis()
 	_build_wheels()
 	driver_camera = Camera3D.new()
-	driver_camera.position = Vector3(0.0, 2.75, 6.5)
+	driver_camera.position = Vector3(0.0, 2.4, 5.2)
 	driver_camera.rotation_degrees.x = -13.0
 	driver_camera.fov = 72.0
 	driver_camera.near = 0.1
@@ -34,66 +35,40 @@ func _ready() -> void:
 func _build_chassis() -> void:
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
-	shape.size = Vector3(1.82, 0.72, 3.7)
+	shape.size = Vector3(1.5, 0.85, 2.55)
 	collision.shape = shape
-	collision.position.y = 0.68
+	collision.position.y = 0.65
 	add_child(collision)
-	_part(Vector3(0.0, 0.68, 0.0), Vector3(1.82, 0.5, 3.7), Color("527b83"))
-	_part(Vector3(0.0, 1.14, 0.18), Vector3(1.56, 0.55, 1.9), Color("41646d"))
-	_part(Vector3(0.0, 1.18, -0.79), Vector3(1.38, 0.36, 0.035), Color("8fc3ce"), 0.18)
-	_part(Vector3(0.0, 1.18, 1.15), Vector3(1.38, 0.34, 0.035), Color("709da7"), 0.08)
-	_part(Vector3(0.0, 0.48, -1.88), Vector3(1.88, 0.16, 0.12), Color("26363d"))
-	_part(Vector3(0.0, 0.48, 1.88), Vector3(1.88, 0.16, 0.12), Color("26363d"))
-	for x in [-0.61, 0.61]:
-		_part(Vector3(x, 0.72, -1.87), Vector3(0.38, 0.2, 0.04), Color("ffe2a1"), 1.4)
-		_part(Vector3(x, 0.72, 1.87), Vector3(0.34, 0.18, 0.04), Color("d95858"), 0.8)
-
-func _part(pos: Vector3, dimensions: Vector3, color: Color, emission: float = 0.0) -> void:
-	var mesh_instance := MeshInstance3D.new()
-	var mesh := BoxMesh.new()
-	mesh.size = dimensions
-	mesh_instance.mesh = mesh
-	mesh_instance.material_override = _material(color, emission)
-	mesh_instance.position = pos
-	add_child(mesh_instance)
-
-func _material(color: Color, emission: float = 0.0) -> StandardMaterial3D:
-	var result := StandardMaterial3D.new()
-	result.albedo_color = color
-	result.roughness = 0.7
-	if emission > 0.0:
-		result.emission_enabled = true
-		result.emission = color
-		result.emission_energy_multiplier = emission
-	return result
+	var model := SedanScene.instantiate()
+	model.rotation.y = PI
+	add_child(model)
 
 func _build_wheels() -> void:
-	for z in [-1.18, 1.18]:
-		for x in [-0.91, 0.91]:
-			var wheel := VehicleWheel3D.new()
-			wheel.position = Vector3(x, 0.38, z)
-			wheel.use_as_steering = z < 0.0
-			wheel.use_as_traction = z > 0.0
-			wheel.wheel_radius = 0.35
-			wheel.wheel_rest_length = 0.2
-			wheel.wheel_friction_slip = 3.2
-			wheel.wheel_roll_influence = 0.12
-			wheel.suspension_travel = 0.2
-			wheel.suspension_stiffness = 38.0
-			wheel.suspension_max_force = 7500.0
-			wheel.damping_compression = 1.8
-			wheel.damping_relaxation = 2.6
-			add_child(wheel)
-			var visual := MeshInstance3D.new()
-			var mesh := CylinderMesh.new()
-			mesh.top_radius = 0.35
-			mesh.bottom_radius = 0.35
-			mesh.height = 0.24
-			mesh.radial_segments = 20
-			visual.mesh = mesh
-			visual.rotation.z = PI * 0.5
-			visual.material_override = _material(Color("172027"))
-			wheel.add_child(visual)
+	var definitions := [
+		["wheel-front-right", Vector3(0.3, 0.3, -0.66)],
+		["wheel-front-left", Vector3(-0.3, 0.3, -0.66)],
+		["wheel-back-left", Vector3(-0.3, 0.3, 0.66)],
+		["wheel-back-right", Vector3(0.3, 0.3, 0.66)]
+	]
+	for definition in definitions:
+		var wheel := VehicleWheel3D.new()
+		wheel.position = definition[1]
+		wheel.use_as_steering = wheel.position.z < 0.0
+		wheel.use_as_traction = wheel.position.z > 0.0
+		wheel.wheel_radius = 0.3
+		wheel.wheel_rest_length = 0.2
+		wheel.wheel_friction_slip = 3.2
+		wheel.wheel_roll_influence = 0.12
+		wheel.suspension_travel = 0.2
+		wheel.suspension_stiffness = 38.0
+		wheel.suspension_max_force = 7500.0
+		wheel.damping_compression = 1.8
+		wheel.damping_relaxation = 2.6
+		add_child(wheel)
+		var visual := find_child(definition[0], true, false)
+		if is_instance_valid(visual):
+			visual.reparent(wheel, false)
+			visual.transform = Transform3D.IDENTITY
 
 func _input(event: InputEvent) -> void:
 	if occupied and event.is_action_pressed("interact") and not event.is_echo():

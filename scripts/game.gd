@@ -26,6 +26,15 @@ var has_save: bool = false
 var checkpoint_data: Dictionary = {}
 var alarm: float = 0.0
 var last_known_player_position := Vector3.ZERO
+var inventory: Dictionary = {}
+var inventory_panel: PanelContainer
+var inventory_slots: Dictionary = {}
+var hacking: bool = false
+var hack_progress: float = 0.0
+var hack_target: Node3D
+var hack_panel: PanelContainer
+var hack_bar: ProgressBar
+var hack_label: Label
 
 var ui: CanvasLayer
 var screen: Control
@@ -77,6 +86,12 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if mode == "playing" and is_instance_valid(player):
+		if hacking:
+			hack_progress += delta
+			hack_bar.value = minf(100.0, hack_progress / 3.0 * 100.0)
+			hack_label.text = tr("HUD_HACKING") % int(hack_bar.value)
+			if hack_progress >= 3.0:
+				finish_hack()
 		if tour_mode:
 			tour_time += delta
 			if level_index == CITY_LEVEL and is_instance_valid(vehicle):
@@ -312,6 +327,11 @@ func start_level(index: int, saved: Dictionary = {}) -> void:
 	has_plan = true if level_index == CITY_LEVEL else bool(saved.get("has_plan", false))
 	nodes_done.assign(saved.get("nodes", []))
 	relays_done.assign(saved.get("relays", []))
+	var saved_inventory: Dictionary = saved.get("inventory", {})
+	inventory = {"badge": bool(saved_inventory.get("badge", false)), "hack": bool(saved_inventory.get("hack", false)), "gpu": bool(saved_inventory.get("gpu", false))}
+	hacking = false
+	hack_progress = 0.0
+	hack_target = null
 	alarm = 0.0
 	mode = "briefing"
 	level_root = Node3D.new()
@@ -405,7 +425,7 @@ func resume_game() -> void:
 	get_tree().paused = false
 	_clear_screen()
 	mode = "playing"
-	player.controls_enabled = not driving
+	player.controls_enabled = not driving and not hacking
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func show_settings(from: String) -> void:
@@ -499,7 +519,7 @@ func _load_progress_info() -> void:
 		unlocked_level = int(config.get_value("progress", "unlocked", 0))
 
 func _save_checkpoint() -> void:
-	checkpoint_data = {"level": level_index, "stage": stage, "access": access, "has_plan": has_plan, "nodes": nodes_done.duplicate(), "relays": relays_done.duplicate()}
+	checkpoint_data = {"level": level_index, "stage": stage, "access": access, "has_plan": has_plan, "nodes": nodes_done.duplicate(), "relays": relays_done.duplicate(), "inventory": inventory.duplicate()}
 	if level_index == CITY_LEVEL and is_instance_valid(player):
 		checkpoint_data["player_position"] = vehicle.exit_position() if driving and is_instance_valid(vehicle) else player.position
 		if is_instance_valid(vehicle):
@@ -525,11 +545,17 @@ func _restore_items() -> void:
 				if action in nodes_done:
 					item.set_completed()
 			3:
-				threshold = {"plan": 1, "override": 2}.get(action, 99)
+				threshold = {"plan": 1, "override": 2, "gpu": 4}.get(action, 99)
 				if action in relays_done:
 					item.set_completed()
 		if stage >= threshold:
 			item.set_completed()
+	if bool(inventory.get("hack", false)):
+		for camera in get_tree().get_nodes_in_group("security_camera"):
+			camera.disable()
+		for item in get_tree().get_nodes_in_group("interactable"):
+			if item.action_id == "security":
+				item.set_completed()
 
 func _build_hud() -> void:
 	for child in hud.get_children():
@@ -614,6 +640,54 @@ func _build_hud() -> void:
 	hud.add_child(subtitle_panel)
 	subtitle_label = _label(subtitle_panel, "", 17)
 	subtitle_panel.hide()
+	inventory_panel = PanelContainer.new()
+	inventory_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	inventory_panel.offset_left = 24
+	inventory_panel.offset_right = 332
+	inventory_panel.offset_top = -174
+	inventory_panel.offset_bottom = -48
+	inventory_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.035, 0.05, 0.84), Color(0.35, 0.72, 0.77, 0.42)))
+	hud.add_child(inventory_panel)
+	var inventory_box := VBoxContainer.new()
+	inventory_box.add_theme_constant_override("separation", 8)
+	inventory_panel.add_child(inventory_box)
+	var inventory_title := _label(inventory_box, "ARCH-LINK  //  " + tr("HUD_INVENTORY"), 11, HORIZONTAL_ALIGNMENT_LEFT)
+	inventory_title.modulate = Color("73cbd1")
+	var slots := HBoxContainer.new()
+	slots.add_theme_constant_override("separation", 6)
+	inventory_box.add_child(slots)
+	inventory_slots.clear()
+	for item_id in ["badge", "hack", "gpu"]:
+		var slot := PanelContainer.new()
+		slot.custom_minimum_size.x = 88
+		slot.add_theme_stylebox_override("panel", _ui_style(Color("102630"), Color("304751")))
+		slots.add_child(slot)
+		var slot_box := VBoxContainer.new()
+		slot.add_child(slot_box)
+		_label(slot_box, tr("INV_" + item_id.to_upper()), 11)
+		var status := _label(slot_box, "[  ]", 15)
+		inventory_slots[item_id] = status
+	hack_panel = PanelContainer.new()
+	hack_panel.set_anchors_preset(Control.PRESET_CENTER)
+	hack_panel.offset_left = -240
+	hack_panel.offset_right = 240
+	hack_panel.offset_top = -65
+	hack_panel.offset_bottom = 65
+	hack_panel.add_theme_stylebox_override("panel", _ui_style(Color(0.015, 0.035, 0.05, 0.96), Color("65c7ce"), 2))
+	hud.add_child(hack_panel)
+	var hack_box := VBoxContainer.new()
+	hack_box.add_theme_constant_override("separation", 14)
+	hack_panel.add_child(hack_box)
+	hack_label = _label(hack_box, "", 18)
+	hack_bar = ProgressBar.new()
+	hack_bar.max_value = 100
+	hack_bar.show_percentage = false
+	hack_bar.custom_minimum_size = Vector2(320, 14)
+	hack_bar.add_theme_stylebox_override("background", _ui_style(Color("172731"), Color("304751")))
+	hack_bar.add_theme_stylebox_override("fill", _ui_style(Color("56b9c1"), Color("56b9c1")))
+	hack_box.add_child(hack_bar)
+	hack_panel.hide()
+	update_inventory()
 	var controls := _label(hud, tr("HUD_CITY_CONTROLS") if level_index == CITY_LEVEL else tr("HUD_CONTROLS"), 12)
 	controls.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	controls.offset_left = -500
@@ -632,6 +706,13 @@ func _build_hud() -> void:
 	_full_rect(blueprint)
 	blueprint.hide()
 	_update_hud()
+
+func update_inventory() -> void:
+	for item_id in inventory_slots:
+		var status: Label = inventory_slots[item_id]
+		var owned := bool(inventory.get(item_id, false))
+		status.text = "[X]" if owned else "[  ]"
+		status.modulate = Color("7de0c4") if owned else Color("60747c")
 
 func _update_hud() -> void:
 	if not is_instance_valid(objective_label):
@@ -687,10 +768,42 @@ func _objective_text() -> String:
 		3:
 			if stage == 2:
 				return tr("OBJ_L4_RELAYS") % relays_done.size()
-			return tr(["OBJ_L4_PLAN", "OBJ_L4_KEY", "OBJ_L4_RELAYS", "OBJ_L4_CORE"][mini(stage, 3)])
+			return tr(["OBJ_L4_PLAN", "OBJ_L4_KEY", "OBJ_L4_RELAYS", "OBJ_L4_GPU", "OBJ_L4_CORE"][mini(stage, 4)])
 		4:
 			return tr("OBJ_CITY")
 	return ""
+
+func add_inventory(item_id: String) -> void:
+	inventory[item_id] = true
+	update_inventory()
+
+func start_hack(item: Node3D) -> void:
+	if hacking:
+		return
+	if not bool(inventory.get("badge", false)):
+		show_message(tr("MSG_BADGE_REQUIRED"))
+		play_sound("error")
+		return
+	hacking = true
+	hack_progress = 0.0
+	hack_target = item
+	hack_bar.value = 0
+	player.controls_enabled = false
+	hack_panel.show()
+	play_sound("terminal")
+
+func finish_hack() -> void:
+	hacking = false
+	hack_panel.hide()
+	if is_instance_valid(hack_target):
+		hack_target.set_completed()
+	add_inventory("hack")
+	for camera in get_tree().get_nodes_in_group("security_camera"):
+		camera.disable()
+	player.controls_enabled = true
+	show_message(tr("MSG_CAMERAS"))
+	_save_checkpoint()
+	play_sound("success")
 
 func interact_with(item: Node3D) -> void:
 	if mode != "playing" or not item.is_in_group("interactable"):
@@ -721,11 +834,7 @@ func interact_with(item: Node3D) -> void:
 		play_sound("error")
 		return
 	if action == "security":
-		item.set_completed()
-		for camera in get_tree().get_nodes_in_group("security_camera"):
-			camera.disable()
-		show_message(tr("MSG_CAMERAS"))
-		play_sound("success")
+		start_hack(item)
 		return
 	if action == "distract":
 		for guard in get_tree().get_nodes_in_group("security"):
@@ -748,7 +857,8 @@ func interact_with(item: Node3D) -> void:
 		"override": expected_stage = 1
 		"exit": expected_stage = 3
 		"node_a", "node_b", "node_c", "relay_a", "relay_b": expected_stage = 2
-		"core": expected_stage = 3
+		"gpu": expected_stage = 3
+		"core": expected_stage = 4
 	if action in ["node_a", "node_b", "node_c"] and level_index == 2 and stage == 3:
 		show_message(tr("MSG_ALREADY"))
 		return
@@ -771,6 +881,7 @@ func interact_with(item: Node3D) -> void:
 		"badge":
 			access += 1
 			stage = 2
+			add_inventory("badge")
 			show_message(tr("MSG_BADGE"))
 		"test_node":
 			stage = 3
@@ -794,6 +905,10 @@ func interact_with(item: Node3D) -> void:
 			if relays_done.size() >= 2:
 				stage = 3
 			show_message(tr("MSG_RELAY"))
+		"gpu":
+			stage = 4
+			add_inventory("gpu")
+			show_message(tr("MSG_GPU"))
 		"core":
 			show_final_choice()
 			return
@@ -857,6 +972,9 @@ func player_caught() -> void:
 	if mode != "playing":
 		return
 	mode = "caught"
+	hacking = false
+	hack_target = null
+	hack_panel.hide()
 	player.controls_enabled = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_clear_screen()
@@ -876,7 +994,7 @@ func complete_level() -> void:
 	var config := ConfigFile.new()
 	config.load("user://progress.cfg")
 	config.set_value("progress", "unlocked", unlocked_level)
-	config.set_value("checkpoint", "data", {"level": CITY_LEVEL, "stage": 0, "access": 0, "has_plan": true, "nodes": [], "relays": []})
+	config.set_value("checkpoint", "data", {"level": CITY_LEVEL, "stage": 0, "access": 0, "has_plan": true, "nodes": [], "relays": [], "inventory": inventory.duplicate()})
 	config.save("user://progress.cfg")
 	has_save = true
 	hud.hide()
@@ -943,6 +1061,8 @@ func _clear_level() -> void:
 	player = null
 	vehicle = null
 	driving = false
+	hacking = false
+	hack_target = null
 	alarm = 0.0
 
 func _exit_tree() -> void:
@@ -953,6 +1073,9 @@ func _setup_audio() -> void:
 	effects = AudioStreamPlayer.new()
 	add_child(effects)
 	sounds["step"] = _tone(75.0, 0.09, 0.7)
+	sounds["step_wood"] = _tone(112.0, 0.085, 0.42)
+	sounds["step_carpet"] = _tone(52.0, 0.13, 0.9)
+	sounds["step_hard"] = _tone(78.0, 0.075, 0.68)
 	sounds["terminal"] = _tone(520.0, 0.18, 0.05)
 	sounds["success"] = _tone(760.0, 0.32, 0.0)
 	sounds["error"] = _tone(135.0, 0.4, 0.15)
@@ -978,10 +1101,20 @@ func _tone(frequency: float, duration: float, noise: float) -> AudioStreamWAV:
 	stream.data = data
 	return stream
 
+func play_footstep(surface: String, volume: float) -> void:
+	var sound_name := "step_carpet" if surface == "carpet" else "step_wood" if surface == "wood" else "step_hard"
+	if not sounds.has(sound_name):
+		return
+	effects.stream = sounds[sound_name]
+	effects.volume_db = volume - 4.0 if surface == "carpet" else volume
+	effects.pitch_scale = randf_range(0.96, 1.04) * (0.88 if surface == "carpet" else 1.0)
+	effects.play()
+
 func play_sound(sound_name: String, volume: float = -7.0) -> void:
 	if sounds.has(sound_name):
 		effects.stream = sounds[sound_name]
 		effects.volume_db = volume
+		effects.pitch_scale = 1.0
 		effects.play()
 
 func _capture_after_delay() -> void:

@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b2ajg13dqro3c"
-path="res://.godot/imported/small_plant.glb-3cb29d5dcf87ab631dd5cbddadede085.scn"
+uid="uid://05ax2ocsfgg2"
+path="res://.godot/imported/path-short.glb-6fc8ee4babd64a280a743b66f833b707.scn"
 
 [deps]
 
-source_file="res://assets/models/props/small_plant.glb"
-dest_files=["res://.godot/imported/small_plant.glb-3cb29d5dcf87ab631dd5cbddadede085.scn"]
+source_file="res://assets/models/city/suburban/path-short.glb"
+dest_files=["res://.godot/imported/path-short.glb-6fc8ee4babd64a280a743b66f833b707.scn"]
 
 [params]
 
